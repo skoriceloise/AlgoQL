@@ -14,11 +14,11 @@ class Graph:
         idNode = len(self.nodes)
         self.nodes[idNode] = Node(idNode, x, y)
 
-    def addEdge(self, node1, node2, dist):
-        self._addEdge(node1, node2, dist)
-        self._addEdge(node2, node1, dist)
+    def addEdge(self, idNode1, idNode2, dist):
+        self._addEdge(idNode1, idNode2, dist)
+        self._addEdge(idNode2, idNode1, dist)
 
-    def _addEdge(self, node1, node2, dist):
-        self.edges.setdefault(node1, [])
-        self.edges[node1].append(node2)
-        self.distances[(node1, node2)] = dist
+    def _addEdge(self, idNode1, idNode2, dist):
+        self.edges.setdefault(idNode1, [])
+        self.edges[idNode1].append(idNode2)
+        self.distances[(idNode1, idNode2)] = dist
