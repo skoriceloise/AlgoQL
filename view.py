@@ -6,7 +6,9 @@ from pygame.locals import *
 import graph
 
 # INTIALISATION
-coleur_station = (255,0,0)
+coleur_station = (0,191,255)
+coleur_ecran = (240,255,255)
+coleur_arrete = (173,216,230)
 
 WIDTH = 1024
 HEIGHT = 768
@@ -15,6 +17,7 @@ decalage_w = 0.1 * WIDTH
 decalage_h = 0.1 * HEIGHT
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen.fill(coleur_ecran)
 
 grapheVille = graph.Graph()
 
@@ -43,9 +46,23 @@ max_y = max([n.y for k,n in grapheVille.nodes.iteritems()])
 propor_x = (WIDTH - 2 * decalage_w) / max_x
 propor_y = (HEIGHT - 2 * decalage_h) / max_y
 
+#dessin des arrêtes
+for k, n2 in grapheVille.edges.iteritems() :
+    c = grapheVille.nodes[k]
+    pos1 = (int(decalage_w + c.x * propor_x) , int(decalage_h + c.y * propor_y))
+    for n in n2 :
+        d = grapheVille.nodes[n]
+        pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+        pygame.draw.line(screen, coleur_arrete, pos1, pos2, 3)
+
+#dessin des neuds
 for id, n in grapheVille.nodes.iteritems() :
     position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
-    pygame.draw.circle(screen, coleur_station, position , 10, 1)
+    pygame.draw.circle(screen, coleur_station, position , 10, 5)
+
+pygame.display.update()
 
 while 1 :
-    pygame.display.update() 
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+             pygame.quit(); sys.exit(); 
