@@ -9,6 +9,7 @@ class Graph:
         self.nodes = {}
         self.edges = {}
         self.distances = {}
+        self.speeds = {}
 
     def addNode(self, x, y):
         idNode = len(self.nodes)
@@ -17,11 +18,12 @@ class Graph:
     def addNodeObject(self, node):
         self.nodes[node.idNode] = node
 
-    def addEdge(self, idNode1, idNode2, dist):
-        self._addEdge(idNode1, idNode2, dist)
-        self._addEdge(idNode2, idNode1, dist)
+    def addEdge(self, idNode1, idNode2, dist, speed):
+        self._addEdge(idNode1, idNode2, dist, speed)
+        self._addEdge(idNode2, idNode1, dist, speed)
 
-    def _addEdge(self, idNode1, idNode2, dist):
+    def _addEdge(self, idNode1, idNode2, dist, speed):
         self.edges.setdefault(idNode1, [])
-        self.edges[idNode1].append(idNode2)
+        self.edges[idNode1].append((idNode2))
         self.distances[(idNode1, idNode2)] = dist
+        self.speeds[(idNode1, idNode2)] = speed

@@ -12,15 +12,15 @@ grapheVille.addNode(3.0, 1.0)
 grapheVille.addNode(2.0, 4.0)
 grapheVille.addNode(1.0, 6.0) #noeud 7
 
-grapheVille.addEdge(0,4, 2.5)
-grapheVille.addEdge(0,5, 2.24)
-grapheVille.addEdge(1,2, 2.24)
-grapheVille.addEdge(2,3, 1.42)
-grapheVille.addEdge(3,4, 3.0)
-grapheVille.addEdge(2,4, 4.0)
-grapheVille.addEdge(4,5, 2.0)
-grapheVille.addEdge(5,6, 3.2)
-grapheVille.addEdge(6,7, 2.3)
+grapheVille.addEdge(0,4, 2.5, 30)
+grapheVille.addEdge(0,5, 2.24, 30)
+grapheVille.addEdge(1,2, 2.24, 20)
+grapheVille.addEdge(2,3, 1.42, 20)
+grapheVille.addEdge(3,4, 3.0, 20)
+grapheVille.addEdge(2,4, 4.0, 20)
+grapheVille.addEdge(4,5, 2.0, 30)
+grapheVille.addEdge(5,6, 3.2, 20)
+grapheVille.addEdge(6,7, 2.3, 20)
 
 entrepot = 0
 
@@ -105,6 +105,7 @@ class Plan:
         for idReseau in reseau:
             self.reseau.addNodeObject(self.plan.nodes[idReseau])
 
+        #Creation des clients a livrer
         self.clients = {}
         for idClient in clients:
             self.clients[idClient] = Client(idClient)
