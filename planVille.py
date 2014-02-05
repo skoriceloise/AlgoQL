@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import math
 import graph
+import tsp
 import random
 from numpy import vstack
 from scipy.cluster.vq import kmeans,vq
@@ -145,13 +146,12 @@ class Plan:
 
         #Calcul des distances entre les noeuds du graphe de la ville
         nbNodes = len(self.plan.nodes)
-        print nbNodes
+
         self.mDistances = [[0.0 for x in range(nbNodes)] for y in range(nbNodes)]
         for i in range(0, nbNodes):
             for j in range(i + 1, nbNodes):
                 if i != j:
                     l = (plusCourtChemin(self.plan, i, j))[0]
-                    print str(i) + "-" + str(j) + " : " + str(l)
                     self.mDistances[i][j] = l
                     self.mDistances[j][i] = l
 
@@ -166,30 +166,42 @@ class Plan:
                 
 if __name__ == '__main__':
 
+ 
     """
     for n1 in grapheVille.nodes.values():
         for n2 in grapheVille.nodes.values():
             print("%s - %s : %s" % (n1.idNode, n2.idNode, distance(n1,n2)))
     """
 
+    nbDrones = 0
+
+
     (longueur, chemin) = plusCourtChemin(grapheVille, 1, 6)
-    print longueur
-    print "chemin"
+    print longueur,
+    print " chemin ",
     for n in chemin:
-        print n.idNode
+        print n.idNode,
+    print
 
     plan = Plan()
+    """
     print "distances"
     for ligne in plan.mDistances:
         print str(ligne).strip('[]')
+    """
 
     print "clients : stations"
     for client in plan.clients:
         print str(plan.clients[client].idClient) + " : " + str(plan.clients[client].stationProche)
 
+
+    cycle = tsp.greedyTSP(plan.mDistances, [0,2,1,4,5,6,7])
+    print "cycle tsp : ",
+    print cycle
+
     #commandes initiales
     commandes = []
-    for i in range(5) :
+    for i in range(10) :
         y = random.choice(clients)
         n = grapheVille.nodes[y]
         poids = random.randrange(50)
@@ -203,6 +215,7 @@ if __name__ == '__main__':
     listCoord = vstack((c.noeud.x, c.noeud.y) for c in commandes)
     centroids,_ = kmeans(listCoord,nbDrones)
     idx,_ = vq(listCoord,centroids)
+
 
 
     #affichages
@@ -244,7 +257,7 @@ if __name__ == '__main__':
         couleur = RGB_tuples[y]
         print couleur
         position = (int(decalage_w + listCoord[i,0] * propor_x) , int(decalage_h + listCoord[i,1] * propor_y))
-        pygame.draw.circle(screen, couleur, position , 10, 5)
+        pygame.draw.circle(screen, couleur, position , 10, 10)
 
     pygame.display.update()
 
@@ -252,6 +265,8 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                  pygame.quit(); sys.exit();
+
+
 
 
 
