@@ -3,6 +3,7 @@
 import math
 import graph
 import tsp
+import readXML
 import random
 from numpy import vstack
 from scipy.cluster.vq import kmeans,vq
@@ -25,6 +26,8 @@ decalage_h = 0.1 * HEIGHT
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen.fill(coleur_ecran)
 
+XML_PLAN = 'plan10x10.xml'
+XML_LIVR = 'livraison10x10-1.xml'
 grapheVille = graph.Graph()
 
 grapheVille.addNode(5.0, 0.0) #noeud 0
@@ -53,6 +56,7 @@ clients = [1,2,7]
 reseau = [0,4,5]
 
 stations = [4,5]
+
 
 
 """Calcul de la distance euclidienne (heuristique A*) """
@@ -216,7 +220,10 @@ if __name__ == '__main__':
     centroids,_ = kmeans(listCoord,nbDrones)
     idx,_ = vq(listCoord,centroids)
 
-
+    grapheVille = readXML.lecturePlanXML(XML_PLAN)
+    print len(grapheVille.nodes)
+    for keys, values in grapheVille.edges.items():
+        print str(keys) + " " + str(values)
 
     #affichages
     max_x = max([n.x for k,n in grapheVille.nodes.iteritems()])
