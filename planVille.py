@@ -1,8 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import math
 import graph
 import random
 from numpy import vstack
 from scipy.cluster.vq import kmeans,vq
+import pygame, sys
+from pygame.locals import *
+import colorsys
+
+# INTIALISATION
+coleur_station = (0,191,255)
+coleur_ecran = (240,255,255)
+coleur_arrete = (173,216,230)
+couleur_entrepot = (255,255,0)
+
+WIDTH = 1024
+HEIGHT = 768
+
+decalage_w = 0.1 * WIDTH
+decalage_h = 0.1 * HEIGHT
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen.fill(coleur_ecran)
 
 grapheVille = graph.Graph()
 
@@ -146,7 +166,6 @@ class Plan:
                 
 if __name__ == '__main__':
 
-    nbDrones = 0
     """
     for n1 in grapheVille.nodes.values():
         for n2 in grapheVille.nodes.values():
@@ -179,10 +198,60 @@ if __name__ == '__main__':
         c = Commande(n, vol, poids, heure)
         commandes.append(c)
 
+    #kmeans
+    nbDrones = 2
     listCoord = vstack((c.noeud.x, c.noeud.y) for c in commandes)
-    #kmeans avec k = 3
-    centroids,_ = kmeans(listCoord,3)
+    centroids,_ = kmeans(listCoord,nbDrones)
     idx,_ = vq(listCoord,centroids)
+
+
+    #affichages
+    max_x = max([n.x for k,n in grapheVille.nodes.iteritems()])
+    max_y = max([n.y for k,n in grapheVille.nodes.iteritems()])
+
+    propor_x = (WIDTH - 2 * decalage_w) / max_x
+    propor_y = (HEIGHT - 2 * decalage_h) / max_y
+
+    #dessin des arrêtes
+    for k, n2 in grapheVille.edges.iteritems() :
+        c = grapheVille.nodes[k]
+        pos1 = (int(decalage_w + c.x * propor_x) , int(decalage_h + c.y * propor_y))
+        for n in n2 :
+            d = grapheVille.nodes[n]
+            pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+            pygame.draw.line(screen, coleur_arrete, pos1, pos2, 3)
+
+    #dessin des noeuds
+    for id, n in grapheVille.nodes.iteritems() :
+        position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
+        pygame.draw.circle(screen, coleur_station, position , 10, 5)
+
+    #dessin entrêpot
+    x = int(decalage_w + grapheVille.nodes[entrepot].x * propor_x) - 10
+    y = int(decalage_h + grapheVille.nodes[entrepot].y * propor_y) - 10
+    rect = pygame.Rect(x ,y , 20, 20)
+    pygame.draw.rect(screen, couleur_entrepot, rect, 10)
+
+    #génération de nbDrones couleurs différentes
+    HSV_tuples = [(x*1.0/nbDrones, 0.5, 0.5) for x in range(nbDrones)]
+    RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
+    RGB_tuples = map(lambda x: tuple(map(lambda y: int(y * 255),x)),RGB_tuples)
+
+    #répartition livraisons
+    for i in range(len(listCoord)) :
+        y = idx[i]
+        print listCoord[i]
+        couleur = RGB_tuples[y]
+        print couleur
+        position = (int(decalage_w + listCoord[i,0] * propor_x) , int(decalage_h + listCoord[i,1] * propor_y))
+        pygame.draw.circle(screen, couleur, position , 10, 5)
+
+    pygame.display.update()
+
+    while 1 :
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                 pygame.quit(); sys.exit();
 
 
 
