@@ -1,5 +1,6 @@
 import math
 import graph
+import tsp
 
 grapheVille = graph.Graph()
 
@@ -154,3 +155,7 @@ if __name__ == '__main__':
     print "clients : stations"
     for client in plan.clients:
         print str(plan.clients[client].idClient) + " : " + str(plan.clients[client].stationProche)
+
+    cycle = tsp.greedyTSP(plan.mDistances, [0,2,1,4,5,6,7])
+    print "cycle tsp"
+    print cycle
