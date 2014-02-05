@@ -237,9 +237,12 @@ if __name__ == '__main__':
     idx,_ = vq(listCoord,centroids)
 
     grapheVille = readXML.lecturePlanXML(XML_PLAN)
-    print len(grapheVille.nodes)
-    for keys, values in grapheVille.edges.items():
-        print str(keys) + " " + str(values)
+    (commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR)
+
+    print entrepot
+    print commandes
+    for c in commandes:
+        print str(c.noeud) + " " + str(c.vol) + " " + str(c.heure)
 
     #affichages
     max_x = max([n.x for k,n in grapheVille.nodes.iteritems()])
