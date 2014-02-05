@@ -1,5 +1,8 @@
 import math
 import graph
+import random
+from numpy import vstack
+from scipy.cluster.vq import kmeans,vq
 
 grapheVille = graph.Graph()
 
@@ -29,6 +32,7 @@ clients = [1,2,7]
 reseau = [0,4,5]
 
 stations = [4,5]
+
 
 """Calcul de la distance euclidienne (heuristique A*) """
 def distance(node1, node2):
@@ -94,6 +98,14 @@ class Client:
         self.distStation = float("inf")
         self.stationProche = None
 
+class Commande:
+    def __init__(self, noeud, vol, poids, heure):
+        self.noeud = noeud
+        self.vol = vol
+        self.poids = poids
+        self.heure = heure
+
+
 class Plan:
     def __init__(self):
         #Graphe general de la ville
@@ -134,6 +146,7 @@ class Plan:
                 
 if __name__ == '__main__':
 
+    nbDrones = 0
     """
     for n1 in grapheVille.nodes.values():
         for n2 in grapheVille.nodes.values():
@@ -154,3 +167,23 @@ if __name__ == '__main__':
     print "clients : stations"
     for client in plan.clients:
         print str(plan.clients[client].idClient) + " : " + str(plan.clients[client].stationProche)
+
+    #commandes initiales
+    commandes = []
+    for i in range(5) :
+        y = random.choice(clients)
+        n = grapheVille.nodes[y]
+        poids = random.randrange(50)
+        vol = random.randrange(50)
+        heure = 0
+        c = Commande(n, vol, poids, heure)
+        commandes.append(c)
+
+    listCoord = vstack((c.noeud.x, c.noeud.y) for c in commandes)
+    #kmeans avec k = 3
+    centroids,_ = kmeans(listCoord,3)
+    idx,_ = vq(listCoord,centroids)
+
+
+
+
