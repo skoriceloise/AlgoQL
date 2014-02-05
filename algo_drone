@@ -1,0 +1,131 @@
+n drones ont une tournée déjà existante
+1 nouvelle livraison
+calcul de la distance par rapport aux tournées déjà existantes (des drones ayant la capacité suffisante)
+choix des plus proches #nombre à définir
+  choix du plus pressé (le premier à partir)
+    affectation
+    recalcul du trajet par tsp glouton (insertion au mieux)
+
+si pas possible (à une étape quelconque)
+  ajout d'un drone parmi ceux dispos
+    si tous utilisés, prendre le premier à nouveau dispo
+  clusterisation (k-means)
+  tsp glouton pour chaque cluster (par ordre d'arrivée des commandes)
+  si dépassement capacité ou distance : commande dans un buffer, traitée après avec l'algo précédent
+  
+
+  
+fin de calcul de la tournée quand :
+  - à XX% de sa charge (80% ?)
+  - timeout #nombre à définir
+  - timeout = 1/charge (en %) * 10h si charge != 0
+
+types de noeuds : 
+  - noeud du réseau urbain
+  - noeud de la ville
+  - point de livraison
+  - entrepôt
+  - station du réseau urbain
+  
+  PENSER ARETES VITESSE
+  
+  
+commande : 
+  - volume
+  - poids
+  - lieu
+  - heure
+
+noeud :
+  - id
+
+client hérite de noeud : 
+  - id (hérité)
+  - station associée
+
+station hérite de noeud :
+
+chemin :
+  - début/fin
+  - trajet
+  - poids du trajet
+
+
+tournée :
+  - listes des stations (= sous-tournée)
+  - chemin à parcourir (liste de noeuds)
+  - poids en distance
+
+tournée station : 
+  - tournée pour la station (liste de livraisons)
+  - chemin à parcourir (liste de noeuds)
+
+drone :
+  - heure de départ
+  - heure de retour à l'entrepôt
+  - tournée
+  - charge
+
+réseau : 
+  - graphe du réseau urbain
+  - (plan de la ville)
+  - station associée au client (précalculé à partir du plan de la ville)
+  
+  
+        appliquer a* pour tous les points de la ville et enregistrer distance
+	pour client-station :
+	  prendre la station la plus proche (obtenue avec a*)
+	  enregistrer le trajet
+
+hypothèses : graphe non orienté
+
+Précalcul :
+Pour tous les noeuds :
+  Pour tous les noeuds (sauf si déja calculé): 
+    Appliquer a*
+    enregistrer le trajet
+    pour client-station :
+      si chemin précédent plus long, enregistrer la nouvelle station correspondante
+      
+Stocker tous les chemins avant ?
+sinon :
+appliquer a* au départ du drone (évite les calculs inutiles)
+
+
+
+function A*(start,goal)
+    closedset := the empty set    // The set of nodes already evaluated.
+    openset := {start}    // The set of tentative nodes to be evaluated, initially containing the start node
+    came_from := the empty map    // The map of navigated nodes.
+ 
+    g_score[start] := 0    // Cost from start along best known path.
+    // Estimated total cost from start to goal through y.
+    f_score[start] := g_score[start] + heuristic_cost_estimate(start, goal)
+ 
+    while openset is not empty
+        current := the node in openset having the lowest f_score[] value
+        if current = goal
+            return reconstruct_path(came_from, goal)
+ 
+        remove current from openset
+        add current to closedset
+        for each neighbor in neighbor_nodes(current)
+            if neighbor in closedset
+                continue
+            tentative_g_score := g_score[current] + dist_between(current,neighbor)
+ 
+            if neighbor not in openset or tentative_g_score < g_score[neighbor] 
+                came_from[neighbor] := current
+                g_score[neighbor] := tentative_g_score
+                f_score[neighbor] := g_score[neighbor] + heuristic_cost_estimate(neighbor, goal)
+                if neighbor not in openset
+                    add neighbor to openset
+ 
+    return failure
+ 
+function reconstruct_path(came_from, current_node)
+    if current_node in came_from
+        p := reconstruct_path(came_from, came_from[current_node])
+        return (p + current_node)
+    else
+        return current_node
