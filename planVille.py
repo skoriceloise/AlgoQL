@@ -112,7 +112,7 @@ if __name__ == '__main__':
             print("%s - %s : %s" % (n1.idNode, n2.idNode, distance(n1,n2)))
     """
 
-    (longueur, chemin) = plusCourtChemin(grapheVille, 0, 1)
+    (longueur, chemin) = plusCourtChemin(grapheVille, 1, 6)
     print longueur
     print "chemin"
     for n in chemin:
