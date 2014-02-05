@@ -14,6 +14,9 @@ class Graph:
         idNode = len(self.nodes)
         self.nodes[idNode] = Node(idNode, x, y)
 
+    def addNodeObject(self, node):
+        self.nodes[node.idNode] = node
+
     def addEdge(self, idNode1, idNode2, dist):
         self._addEdge(idNode1, idNode2, dist)
         self._addEdge(idNode2, idNode1, dist)
