@@ -229,20 +229,14 @@ if __name__ == '__main__':
         c = Commande(n, vol, poids, heure)
         commandes.append(c)
 
-
-    #kmeans
-    nbDrones = 2
-    listCoord = vstack((c.noeud.x, c.noeud.y) for c in commandes)
-    centroids,_ = kmeans(listCoord,nbDrones)
-    idx,_ = vq(listCoord,centroids)
-
     grapheVille = readXML.lecturePlanXML(XML_PLAN)
     (commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR)
 
-    print entrepot
-    print commandes
-    for c in commandes:
-        print str(c.noeud) + " " + str(c.vol) + " " + str(c.heure)
+    #kmeans
+    nbDrones = 2
+    listCoord = vstack((grapheVille.nodes[c.noeud].x, grapheVille.nodes[c.noeud].y) for c in commandes)
+    centroids,_ = kmeans(listCoord,nbDrones)
+    idx,_ = vq(listCoord,centroids)
 
     #affichages
     max_x = max([n.x for k,n in grapheVille.nodes.iteritems()])
