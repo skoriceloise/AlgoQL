@@ -126,13 +126,12 @@ class Plan:
 
         #Calcul des distances entre les noeuds du graphe de la ville
         nbNodes = len(self.plan.nodes)
-        print nbNodes
+
         self.mDistances = [[0.0 for x in range(nbNodes)] for y in range(nbNodes)]
         for i in range(0, nbNodes):
             for j in range(i + 1, nbNodes):
                 if i != j:
                     l = (plusCourtChemin(self.plan, i, j))[0]
-                    print str(i) + "-" + str(j) + " : " + str(l)
                     self.mDistances[i][j] = l
                     self.mDistances[j][i] = l
 
@@ -148,22 +147,20 @@ class Plan:
 if __name__ == '__main__':
 
     nbDrones = 0
-    """
-    for n1 in grapheVille.nodes.values():
-        for n2 in grapheVille.nodes.values():
-            print("%s - %s : %s" % (n1.idNode, n2.idNode, distance(n1,n2)))
-    """
 
     (longueur, chemin) = plusCourtChemin(grapheVille, 1, 6)
-    print longueur
-    print "chemin"
+    print longueur,
+    print " chemin ",
     for n in chemin:
-        print n.idNode
+        print n.idNode,
+    print
 
     plan = Plan()
+    """
     print "distances"
     for ligne in plan.mDistances:
         print str(ligne).strip('[]')
+    """
 
     print "clients : stations"
     for client in plan.clients:
@@ -171,7 +168,7 @@ if __name__ == '__main__':
 
 
     cycle = tsp.greedyTSP(plan.mDistances, [0,2,1,4,5,6,7])
-    print "cycle tsp"
+    print "cycle tsp : ",
     print cycle
 
     #commandes initiales

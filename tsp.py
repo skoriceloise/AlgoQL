@@ -4,8 +4,6 @@ def greedyTSP(distMat, idNodes):
 	added = []
 	for idNode in idNodes:
 		insertNodeTSP(distMat, idNode, cycle)
-		print idNode
-		print cycle
 
 	return cycle
 
