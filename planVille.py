@@ -130,6 +130,21 @@ class Commande:
         self.poids = poids
         self.heure = heure
 
+class Tournee :
+    def __init__(self):
+        self.chemin = []
+        self.distance = float("inf")
+
+    def addNode(self, node):
+        self.chemin[node.idNode] = node
+
+class Drone :
+    def __init__(self):
+        self.tournee = Tournee()
+        self.depart = None
+        self.retour = None
+        self.poids = None
+        self.volume = None
 
 class Plan:
     def __init__(self):
@@ -178,7 +193,7 @@ if __name__ == '__main__':
     """
 
     nbDrones = 0
-
+    drones = []
 
     (longueur, chemin) = plusCourtChemin(grapheVille, 1, 6)
     print longueur,
@@ -213,6 +228,7 @@ if __name__ == '__main__':
         heure = 0
         c = Commande(n, vol, poids, heure)
         commandes.append(c)
+
 
     #kmeans
     nbDrones = 2
