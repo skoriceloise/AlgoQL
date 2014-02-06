@@ -12,12 +12,8 @@ from pygame.locals import *
 import colorsys
 
 # INTIALISATION
-clients = [13, 56, 14, 68, 43, 98, 67, 73, 50, 45, 6, 80]
 
-reseau = list(set(range(100))-set(clients))
-
-stations = []
-
+#constantes affichages
 coleur_station = (0,191,255)
 coleur_ecran = (240,255,255)
 coleur_arrete = (173,216,230)
@@ -33,8 +29,23 @@ decalage_h = 0.1 * HEIGHT
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen.fill(coleur_ecran)
 
+#constantes plan
 XML_PLAN = 'plan10x10.xml'
 XML_LIVR = 'livraison10x10-1.xml'
+
+clients = [13, 56, 14, 68, 43, 98, 67, 73, 50, 45, 6, 80]
+
+reseau = list(set(range(100))-set(clients))
+
+stations = []
+
+DISTMAX = 25000.0
+
+VOLMAX = 50.0
+
+POIDSMAX = 50.0
+
+#variables globales
 grapheVille = graph.Graph()
 
 """Calcul de la distance euclidienne (heuristique A*) """
@@ -102,9 +113,35 @@ def myKmeans(drones,commandes) :
     idx,_ = vq(listCoord,centroids)
     return (idx, listCoord)
 
-def repartition(commandes) :
+def verifierCharges(drones,idx,commandes) :
+    bufferCommandes = []
+    for d in drones : d.tournee.annulerTournee()
     for c in commandes :
-        print "ok"
+        d = drones[idx[commandes.index(c)]]
+        (dist, _, vol, poids) = d.tournee.tryAddCommande(plan,c)
+        if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX :
+            d.tournee.addCommande(plan,c)
+        else :
+            bufferCommandes.append(c)
+    return bufferCommandes
+
+def repartition(commandes, drones, plan) :
+    for c in commandes :
+        optimum = None
+        opt_diffDist = DISTMAX
+        for d in drones :
+            (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
+            if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX :
+                if diffDist < opt_diffDist : optimum = d
+
+        if optimum == None : 
+            drones.append(Drone())
+            myKmeans(drones,commandes)
+            nonAffectees = verifierCharges(drones,idx,commandes)
+            #TODO : comment on gère les commandes non affectées à un drône??
+        else :
+            optimum.tournee.addCommande(plan,c)
+        
 
 def dessinLivraisons(idx,listCoord):
     nbDrones = max(idx) + 1
@@ -139,9 +176,9 @@ class Tournee :
     def __init__(self):
         self.cheminReseau = [] #tournee des stations
         self.cheminStations = {} #sous-tournee des livraisons pour chaque station
-        self.distance = 0
-        self.poids = 0
-        self.volume = 0
+        self.distance = 0.0
+        self.poids = 0.0
+        self.volume = 0.0
 
     def addCommande(self, plan, commande):
         #Recherche si la station est deja dans la tournee
@@ -155,12 +192,37 @@ class Tournee :
             #ajout de la station a la tournee
             self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminReseau, self.distance)
             #creation de la sous-tournee
-            (cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
             self.distance += d
         self.poids += commande.poids
         self.volume += commande.vol
 
+    def tryAddCommande(self, plan, commande):
+        #Recherche si la station est deja dans la tournee
+        station = plan.clients[commande.noeud].stationProche 
+        if station in self.cheminReseau :
+            #Si la station est dans la tournee, ajout de la commande a la 
+            #sous-tournee
+            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, cheminStations[station], self.distance)
+        else:
+            #Sinon
+            #ajout de la station a la tournee
+            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminReseau, self.distance)
+            #creation de la sous-tournee
+            (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            distance += d
+        diffDist = distance - self.distance
+        poids = self.poids + commande.poids
+        volume = self.volume + commande.vol
 
+        return (distance, diffDist, poids, volume)
+
+    def annulerTournee(self):
+        self.cheminReseau = [] 
+        self.cheminStations = {}
+        self.distance  = 0
+        self.poids = 0
+        self.volume = 0
 
 
 class Drone :
@@ -168,8 +230,6 @@ class Drone :
         self.tournee = Tournee()
         self.depart = None
         self.retour = None
-        self.poids = None
-        self.volume = None
 
     def calculChemin(self, graph):
         print ""
@@ -226,9 +286,6 @@ if __name__ == '__main__':
 
     drones = [Drone()]
     stations = list(set(reseau) - set([entrepot]))
-
-
-
 
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
     print longueur,
@@ -291,3 +348,4 @@ if __name__ == '__main__':
             if event.type == KEYDOWN and event.key == K_RETURN :
                 (idx,listCoord) = myKmeans(drones,commandes)
                 dessinLivraisons(idx,listCoord)
+                repartition(commandes, drones, plan)
