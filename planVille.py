@@ -7,6 +7,7 @@ import readXML
 import random
 import copy
 from numpy import vstack
+import datetime
 from scipy.cluster.vq import kmeans,vq
 import pygame, sys
 from pygame.locals import *
@@ -46,6 +47,9 @@ DISTMAX = 25000.0
 VOLMAX = 50.0
 
 POIDSMAX = 50.0
+
+TIMEOUT_MIN = 0.5 #valeur min du timeout (en heures)
+TIMEOUT_MAX = 2   #valeur max du timeout (en heures)
 
 #variables globales
 grapheVille = graph.Graph()
@@ -124,9 +128,12 @@ def verifierCharges(drones,idx,commandes, idEntrepot) :
         d = drones[idx[commandes.index(c)]]
         print "j'essaie d'ajouter"
         (dist, _, vol, poids) = d.tournee.tryAddCommande(plan,c)
-        if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX :
+        departDrone = d.updateDepart(False, c)
+        if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX and c.heure < departDrone :
             print "j'ajoute pour de vrai"
             d.tournee.addCommande(plan,c)
+            d.updateDepart(True, c)
+            d.updateCommandes(c)
         else :
             print "j'enregistre dans le buffer"
             bufferCommandes.append(c)
@@ -137,15 +144,17 @@ def repartition(drones, plan, commandes) :
         optimum = None
         opt_diffDist = DISTMAX
         for d in drones :
-            #print "essai ajout "+str(c.noeud)
-            print "essai ajout dans repartition"
-            (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
-            #print "fin essai"
-            if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX :
-                #if diffDist < opt_diffDist : optimum = d
-                if  diffDist < opt_diffDist : 
-                    optimum = d
-                    opt_diffDist = diffDist
+                #print "essai ajout "+str(c.noeud)
+                print "essai ajout dans repartition"
+                (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
+                #mise a jour de l'heure de depart du drone
+                departDrone = d.updateDepart(False, c)
+
+                #print "fin essai"
+                if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX and c.heure < departDrone :
+                    if  diffDist < opt_diffDist : 
+                        optimum = d
+                        opt_diffDist = diffDist
 
         if optimum == None : 
             print "impossible d'ajouter"+str(c.noeud)
@@ -162,6 +171,8 @@ def repartition(drones, plan, commandes) :
         else :
             print "veritable ajout dans repartition"
             optimum.tournee.addCommande(plan,c)
+            d.updateDepart(True, c)
+            d.updateCommandes(c)
 
 
 def dessinLivraisons(drones, plan):
@@ -274,13 +285,26 @@ class Drone :
     #On peut considerer pour le programme que les drones sont
     #en quantite infinie grace a la rotation des drones :
     #les drones reviennent toujours a l'entrepot et seront donc a nouveau disponibles
+    #(avec le timeout, les heures de depart obtenues seront fausses a cause du decalage)
 
     def __init__(self, plan):
         self.tournee = Tournee(plan.idEntrepot)
+        self.commandes = []
         self.depart = None
 
-    def calculChemin(self, graph):
-        print ""
+    def updateCommandes(self, commande):
+        self.commandes.append(commande)
+
+    def updateDepart(self, modifAttribut, commande):
+        proportPoids = self.tournee.poids / POIDSMAX
+        proportVolume = self.tournee.volume / VOLMAX
+        timeout = TIMEOUT_MAX - TIMEOUT_MIN * 0.5 * (proportPoids + proportVolume)
+        hCommandes = list(c.heure for c in self.commandes)
+        hCommandes.append(commande.heure)
+        first = min(hCommandes)
+        hDepart = datetime.timedelta(hours=timeout) + first
+        if modifAttribut : self.depart = hDepart
+        return hDepart
 
 class Plan:
     def __init__(self):
@@ -407,7 +431,8 @@ if __name__ == '__main__':
                     print "drone : "+str(d)
                     print "charge : " + str(d.tournee.poids),
                     print " volume : " + str(d.tournee.volume),
-                    print " distance : " + str(d.tournee.distance) 
+                    print " distance : " + str(d.tournee.distance),
+                    print " depart : " + str(d.depart) 
                     print d.tournee.cheminReseau
                     print pprint(d.tournee.cheminStations)
                     d.tournee.annulerTournee(plan.idEntrepot)
