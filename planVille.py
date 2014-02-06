@@ -151,8 +151,8 @@ def repartition(drones, plan) :
             print "impossible d'ajouter"+str(c.noeud)
             drones.append(Drone())
             myKmeans(drones,plan.commandes)
-            #nonAffectees = verifierCharges(drones,idx,plan.commandes)
-            repartition(drones, plan)
+            nonAffectees = verifierCharges(drones,idx,plan.commandes)
+            #repartition(drones, plan)
             break
             #TODO : comment on gère les commandes non affectées à un drône??
             #lancer repartition en recursif
