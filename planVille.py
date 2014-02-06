@@ -156,8 +156,6 @@ class Tournee :
         self.volume += commande.vol
 
 
-
-
 class Drone :
     def __init__(self):
         self.tournee = Tournee()
@@ -174,6 +172,8 @@ class Plan:
         #Graphe general de la ville
         self.plan = grapheVille
 
+        (self.commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR, grapheVille)
+
         #Graphe du reseau urbain
         self.idEntrepot = entrepot
         self.reseau = graph.Graph()
@@ -182,8 +182,12 @@ class Plan:
 
         #Creation des clients a livrer
         self.clients = {}
-        for idClient in clients:
-            self.clients[idClient] = Client(idClient)
+        noeudsComm = [c.noeud for c in self.commandes]
+        for idClient in noeudsComm:
+            if idClient not in self.clients.keys():
+                self.clients[idClient] = Client(idClient)
+        print "salut"
+        print self.clients.keys()
         self.stations = stations 
 
         #Calcul des distances entre les noeuds du graphe de la ville
@@ -210,8 +214,7 @@ if __name__ == '__main__':
 
     #recuperation du plan et des commandes des fichiers XML
     grapheVille = readXML.lecturePlanXML(XML_PLAN)
-    (commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR, grapheVille)
- 
+
     """
     for n1 in grapheVille.nodes.values():
         for n2 in grapheVille.nodes.values():
