@@ -18,7 +18,11 @@ def lecturePlanXML(ficPlan):
             idNode1 = int(node.attributes['id'].value)
             idNode2 = int(edge.attributes['destination'].value)
             if idNode2 not in newGraph.edges.keys() or idNode1 not in newGraph.edges[idNode2]:
-                    newGraph.addEdge(idNode1, idNode2, float(edge.attributes['longueur'].value), float(edge.attributes['vitesse'].value))
+                    longueur = edge.attributes['longueur'].value
+                    longueur = longueur.replace(',', '.')
+                    vitesse = edge.attributes['vitesse'].value
+                    vitesse = vitesse.replace(',','.')
+                    newGraph.addEdge(idNode1, idNode2, float(longueur), float(vitesse))
 
     return newGraph
 
