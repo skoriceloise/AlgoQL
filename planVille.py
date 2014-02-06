@@ -132,13 +132,13 @@ def verifierCharges(drones,idx,commandes) :
             bufferCommandes.append(c)
     return bufferCommandes
 
-def repartition(drones, plan) :
-    for c in plan.commandes :
+def repartition(drones, plan, commandes) :
+    for c in commandes :
         optimum = None
         opt_diffDist = DISTMAX
         for d in drones :
             #print "essai ajout "+str(c.noeud)
-            "essai ajout dans repartition"
+            print "essai ajout dans repartition"
             (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
             #print "fin essai"
             if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX :
@@ -152,7 +152,15 @@ def repartition(drones, plan) :
             drones.append(Drone())
             myKmeans(drones,plan.commandes)
             nonAffectees = verifierCharges(drones,idx,plan.commandes)
-            #repartition(drones, plan)
+            b = list(c.noeud for c in nonAffectees)
+            print "je repartis dans le buffer"+str(b)
+            repartition(drones, plan, nonAffectees)
+
+            print "resultat final"
+            for d in drones:
+                print "drone : "+str(d)
+                print d.tournee.cheminReseau
+                print pprint(d.tournee.cheminStations)
             break
             #TODO : comment on gère les commandes non affectées à un drône??
             #lancer repartition en recursif
@@ -160,6 +168,12 @@ def repartition(drones, plan) :
             print "veritable ajout dans repartition"
             optimum.tournee.addCommande(plan,c)
         
+    print "resultat final"
+    for d in drones:
+        print "drone : "+str(d)
+        print d.tournee.cheminReseau
+        print pprint(d.tournee.cheminStations)
+
 
 def dessinLivraisons(idx,listCoord):
     nbDrones = max(idx) + 1
@@ -392,5 +406,5 @@ if __name__ == '__main__':
                 (idx,listCoord) = myKmeans(drones,plan.commandes)
                 dessinLivraisons(idx,listCoord)
 
-                repartition(drones, plan)
+                repartition(drones, plan, plan.commandes)
 
