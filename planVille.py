@@ -51,6 +51,8 @@ POIDSMAX = 50.0
 TIMEOUT_MIN = 0.5 #valeur min du timeout (en heures)
 TIMEOUT_MAX = 2   #valeur max du timeout (en heures)
 
+N_PROCHES = 3
+
 #variables globales
 grapheVille = graph.Graph()
 
@@ -112,6 +114,16 @@ def plusCourtChemin(graphe, depart, arrivee):
     route.reverse()
     return (longueur, route)
 
+#Distance d'une commande a une tournee (definie par le min)
+def distanceTournee(mDistances, drone, commande):
+    minDist = float("inf")
+    for c in drone.commandes:
+        distance = mDistances[c.noeud][commande.noeud]
+        if distance < minDist:
+            minDist = distance
+
+    return minDist
+
 def myKmeans(drones,commandes) :
     nbDrones = len(drones)
     listCoord = vstack((grapheVille.nodes[c.noeud].x, grapheVille.nodes[c.noeud].y) for c in commandes)
@@ -143,7 +155,21 @@ def repartition(drones, plan, commandes) :
     for c in commandes :
         optimum = None
         opt_diffDist = DISTMAX
+
+        #Calcul de la distance de la commande aux tournees de tous les drones
+        #pour recuperer les N plus proches
+        distancesTournee = []
+        dronesProches = []
         for d in drones :
+            distancesTournee.append((distanceTournee(plan.mDistances, d, c), d))
+        distancesTournee.sort(key = lambda dt: dt[0])
+        print distancesTournee
+        #Tri des drones les plus proches selon le depart (ordre croissant)
+        dronesProches = dronesProches[0:N_PROCHES]
+        dronesProches.sort(key = lambda dt: dt[1].depart)
+
+
+        for d in dronesProches :
                 #print "essai ajout "+str(c.noeud)
                 print "essai ajout dans repartition"
                 (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
@@ -162,7 +188,7 @@ def repartition(drones, plan, commandes) :
             drones.append(Drone(plan))
             (idx, _) = myKmeans(drones,plan.commandes)
             nonAffectees = verifierCharges(drones,idx,plan.commandes, plan.idEntrepot)
-
+            print list(c.heure for c in nonAffectees)
             b = list(c.noeud for c in nonAffectees)
             print "je repartis dans le buffer"+str(b)
             repartition(drones, plan, nonAffectees)
@@ -368,7 +394,7 @@ if __name__ == '__main__':
     plan.addReseauUrbain(reseau)
 
     drones = [Drone(plan)]
-    stations = list(set(reseau) - set([plan.idEntrepot]))
+    stations = list(set(reseau) - set([plan.idEntrepot]) - set((range(10,30))))
     plan.createClients()
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
 
