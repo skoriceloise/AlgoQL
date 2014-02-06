@@ -33,11 +33,11 @@ screen.fill(coleur_ecran)
 XML_PLAN = 'plan10x10.xml'
 XML_LIVR = 'livraison10x10-1.xml'
 
-clients = [13, 56, 14, 68, 43, 98, 67, 73, 50, 45, 6, 80]
+#clients = [13, 56, 14, 68, 43, 98, 67, 73, 50, 45, 6, 80]
 
-reseau = list(set(range(100))-set(clients))
+#reseau = list(set(range(100))-set(clients))
 
-stations = []
+stations = [12,7,67,97]
 
 DISTMAX = 25000.0
 
@@ -130,15 +130,22 @@ def repartition(commandes, drones, plan) :
         optimum = None
         opt_diffDist = DISTMAX
         for d in drones :
+            print "essai ajout "+str(c.noeud)
             (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
+            print "fin essai"
             if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX :
-                if diffDist < opt_diffDist : optimum = d
+                #if diffDist < opt_diffDist : optimum = d
+                if  diffDist < opt_diffDist : 
+                    optimum = d
+                    opt_diffDist = diffDist
 
         if optimum == None : 
+            print "impossible d'ajouter"+str(c.noeud)
             drones.append(Drone())
             myKmeans(drones,commandes)
             nonAffectees = verifierCharges(drones,idx,commandes)
             #TODO : comment on gère les commandes non affectées à un drône??
+            #lancer repartition en recursif
         else :
             optimum.tournee.addCommande(plan,c)
         
@@ -186,7 +193,7 @@ class Tournee :
         if station in self.cheminReseau :
             #Si la station est dans la tournee, ajout de la commande a la 
             #sous-tournee
-            self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, cheminStations[station], self.distance)
+            self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminStations[station], self.distance)
         else:
             #Sinon
             #ajout de la station a la tournee
@@ -203,7 +210,7 @@ class Tournee :
         if station in self.cheminReseau :
             #Si la station est dans la tournee, ajout de la commande a la 
             #sous-tournee
-            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, cheminStations[station], self.distance)
+            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminStations[station], self.distance)
         else:
             #Sinon
             #ajout de la station a la tournee
@@ -239,12 +246,7 @@ class Plan:
         self.plan = grapheVille
 
         (self.commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR, grapheVille)
-
-        #Graphe du reseau urbain
         self.idEntrepot = entrepot
-        self.reseau = graph.Graph()
-        for idReseau in reseau:
-            self.reseau.addNodeObject(self.plan.nodes[idReseau])
 
         #Creation des clients a livrer
         self.clients = {}
@@ -252,9 +254,8 @@ class Plan:
         for idClient in noeudsComm:
             if idClient not in self.clients.keys():
                 self.clients[idClient] = Client(idClient)
-        print "salut"
-        print self.clients.keys()
         self.stations = stations 
+        print self.stations
 
         #Calcul des distances entre les noeuds du graphe de la ville
         nbNodes = len(self.plan.nodes)
@@ -266,15 +267,22 @@ class Plan:
                     l = (plusCourtChemin(self.plan, i, j))[0]
                     self.mDistances[i][j] = l
                     self.mDistances[j][i] = l
-
+                    
                     #Enregistrement de la station la plus proche pour un client
-                    if i in self.clients and j in self.stations:
+                    if i in self.clients.keys() and j in self.stations: 
                         if self.clients[i].distStation > l:
                             self.clients[i].stationProche = j
                             self.clients[i].distStation = l
-                    elif i in self.stations and j in self.clients:
+                    elif i in self.stations and j in self.clients.keys():
+                        if self.clients[j].distStation > l:
                             self.clients[j].stationProche = i
                             self.clients[j].distStation = l
+
+    def addReseauUrbain(self, reseau):
+        #Graphe du reseau urbain
+        self.reseau = graph.Graph()
+        for idReseau in reseau:
+            self.reseau.addNodeObject(self.plan.nodes[idReseau])
                 
 if __name__ == '__main__':
 
@@ -287,19 +295,14 @@ if __name__ == '__main__':
             print("%s - %s : %s" % (n1.idNode, n2.idNode, distance(n1,n2)))
     """
     plan = Plan()
+    reseau = list(set(range(100))-set(plan.clients))
+    plan.addReseauUrbain(reseau)
 
     drones = [Drone()]
     stations = list(set(reseau) - set([plan.idEntrepot]))
 
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
-    print longueur,
-    print " chemin ",
-    for n in chemin:
-        print n.idNode,
-    print
 
-
-    
     """
     print "distances"
     for ligne in plan.mDistances:
@@ -334,7 +337,7 @@ if __name__ == '__main__':
     #dessin des noeuds
     for id, n in grapheVille.nodes.iteritems() :
         couleur = coleur_station
-        if id in clients : couleur = couleur_client
+        if id in plan.clients : couleur = couleur_client
         position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
         pygame.draw.circle(screen, couleur, position , 10, 5)
 
@@ -350,6 +353,6 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit();
             if event.type == KEYDOWN and event.key == K_RETURN :
-                (idx,listCoord) = myKmeans(drones,commandes)
+                (idx,listCoord) = myKmeans(drones,plan.commandes)
                 dessinLivraisons(idx,listCoord)
-                repartition(commandes, drones, plan)
+                repartition(plan.commandes, drones, plan)

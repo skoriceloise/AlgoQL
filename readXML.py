@@ -32,11 +32,9 @@ def lectureCommandesXML(ficLivr, graph):
     commandesXML = xmldoc.getElementsByTagName('Livraison')
     for c in commandesXML:
         att = c.attributes
-
         heure = datetime.strptime(att['heure'].value, '%d-%m-%Y %H:%M:%S')
         commObject = planVille.Commande(int(att['adresse'].value), float(att['volume'].value), float(att['poids'].value), heure)
         commandes.append(commObject)
-        print commObject.noeud
 
     entrepot = int(xmldoc.getElementsByTagName('Entrepot')[0].attributes['adresse'].value)
 
