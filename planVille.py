@@ -286,10 +286,10 @@ if __name__ == '__main__':
         for n2 in grapheVille.nodes.values():
             print("%s - %s : %s" % (n1.idNode, n2.idNode, distance(n1,n2)))
     """
-
+    plan = Plan()
 
     drones = [Drone()]
-    stations = list(set(reseau) - set([entrepot]))
+    stations = list(set(reseau) - set([plan.idEntrepot]))
 
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
     print longueur,
@@ -299,7 +299,7 @@ if __name__ == '__main__':
     print
 
 
-    plan = Plan()
+    
     """
     print "distances"
     for ligne in plan.mDistances:
@@ -339,8 +339,8 @@ if __name__ == '__main__':
         pygame.draw.circle(screen, couleur, position , 10, 5)
 
     #dessin entrêpot
-    x = int(decalage_w + grapheVille.nodes[entrepot].x * propor_x) - 10
-    y = int(decalage_h + grapheVille.nodes[entrepot].y * propor_y) - 10
+    x = int(decalage_w + grapheVille.nodes[plan.idEntrepot].x * propor_x) - 10
+    y = int(decalage_h + grapheVille.nodes[plan.idEntrepot].y * propor_y) - 10
     rect = pygame.Rect(x ,y , 20, 20)
     pygame.draw.rect(screen, couleur_entrepot, rect, 10)
 
