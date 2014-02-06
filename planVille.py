@@ -115,10 +115,10 @@ def myKmeans(drones,commandes) :
     idx,_ = vq(listCoord,centroids)
     return (idx, listCoord)
 
-def verifierCharges(drones,idx,commandes) :
+def verifierCharges(drones,idx,commandes, idEntrepot) :
     bufferCommandes = []
     print "tournees annulees"
-    for d in drones : d.tournee.annulerTournee()
+    for d in drones : d.tournee.annulerTournee(idEntrepot)
 
     for c in commandes :
         d = drones[idx[commandes.index(c)]]
@@ -149,15 +149,14 @@ def repartition(drones, plan, commandes) :
 
         if optimum == None : 
             print "impossible d'ajouter"+str(c.noeud)
-            drones.append(Drone())
+            drones.append(Drone(plan))
             myKmeans(drones,plan.commandes)
-            nonAffectees = verifierCharges(drones,idx,plan.commandes)
+            nonAffectees = verifierCharges(drones,idx,plan.commandes, plan.idEntrepot)
             b = list(c.noeud for c in nonAffectees)
             print "je repartis dans le buffer"+str(b)
             repartition(drones, plan, nonAffectees)
             break
-            #TODO : comment on gère les commandes non affectées à un drône??
-            #lancer repartition en recursif
+
         else :
             print "veritable ajout dans repartition"
             optimum.tournee.addCommande(plan,c)
@@ -193,9 +192,9 @@ class Commande:
         self.heure = heure
 
 class Tournee :
-    def __init__(self):
-        self.cheminReseau = [] #tournee des stations
-        self.cheminStations = {} #sous-tournee des livraisons pour chaque station
+    def __init__(self, idEntrepot):
+        self.cheminReseau = [idEntrepot] #tournee des stations
+        self.cheminStations = {plan.idEntrepot : plan.idEntrepot} #sous-tournee des livraisons pour chaque station
         self.distance = 0.0
         self.poids = 0.0
         self.volume = 0.0
@@ -259,18 +258,21 @@ class Tournee :
         """
         return (distance, diffDist, poids, volume)
 
-    def annulerTournee(self):
-        self.cheminReseau = [] 
-        self.cheminStations = {}
+    def annulerTournee(self, idEntrepot):
+        self.cheminReseau = [idEntrepot] 
+        self.cheminStations = {idEntrepot : idEntrepot}
         self.distance  = 0
         self.poids = 0
         self.volume = 0
 
 class Drone :
-    def __init__(self):
-        self.tournee = Tournee()
+    #On peut considerer pour le programme que les drones sont
+    #en quantite infinie grace a la rotation des drones :
+    #les drones reviennent toujours a l'entrepot et seront donc a nouveau disponibles
+
+    def __init__(self, plan):
+        self.tournee = Tournee(plan.idEntrepot)
         self.depart = None
-        self.retour = None
 
     def calculChemin(self, graph):
         print ""
@@ -336,7 +338,7 @@ if __name__ == '__main__':
     reseau = list(set(range(100))-set(plan.clients))
     plan.addReseauUrbain(reseau)
 
-    drones = [Drone()]
+    drones = [Drone(plan)]
     stations = list(set(reseau) - set([plan.idEntrepot]))
     plan.createClients()
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
@@ -398,8 +400,11 @@ if __name__ == '__main__':
                 print "resultat final"
                 for d in drones:
                     print "drone : "+str(d)
+                    print "charge : " + str(d.tournee.poids),
+                    print " volume : " + str(d.tournee.volume),
+                    print " distance : " + str(d.tournee.distance) 
                     print d.tournee.cheminReseau
                     print pprint(d.tournee.cheminStations)
-                    d.tournee.annulerTournee()
+                    d.tournee.annulerTournee(plan.idEntrepot)
 
 
