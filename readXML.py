@@ -26,7 +26,7 @@ def lecturePlanXML(ficPlan):
 
     return newGraph
 
-def lectureCommandesXML(ficLivr):
+def lectureCommandesXML(ficLivr, graph):
     commandes = []
     xmldoc = minidom.parse(ficLivr)
     commandesXML = xmldoc.getElementsByTagName('Livraison')
@@ -36,6 +36,7 @@ def lectureCommandesXML(ficLivr):
         heure = datetime.strptime(att['heure'].value, '%d-%m-%Y %H:%M:%S')
         commObject = planVille.Commande(int(att['adresse'].value), float(att['volume'].value), float(att['poids'].value), heure)
         commandes.append(commObject)
+        print commObject.noeud
 
     entrepot = int(xmldoc.getElementsByTagName('Entrepot')[0].attributes['adresse'].value)
 

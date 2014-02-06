@@ -125,18 +125,38 @@ class Client:
 
 class Commande:
     def __init__(self, noeud, vol, poids, heure):
-        self.noeud = noeud
+        self.noeud = noeud #id noeud
         self.vol = vol
         self.poids = poids
         self.heure = heure
 
 class Tournee :
     def __init__(self):
-        self.chemin = []
-        self.distance = float("inf")
+        self.cheminReseau = [] #tournee des stations
+        self.cheminStations = {} #sous-tournee des livraisons pour chaque station
+        self.distance = 0
+        self.poids = 0
+        self.volume = 0
 
-    def addNode(self, node):
-        self.chemin[node.idNode] = node
+    def addCommande(self, plan, commande):
+        #Recherche si la station est deja dans la tournee
+        station = plan.clients[commande.noeud].stationProche 
+        if station in self.cheminReseau :
+            #Si la station est dans la tournee, ajout de la commande a la 
+            #sous-tournee
+            self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, cheminStations[station], self.distance)
+        else:
+            #Sinon
+            #ajout de la station a la tournee
+            self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminReseau, self.distance)
+            #creation de la sous-tournee
+            (cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            self.distance += d
+        self.poids += commande.poids
+        self.volume += commande.vol
+
+
+
 
 class Drone :
     def __init__(self):
@@ -145,6 +165,9 @@ class Drone :
         self.retour = None
         self.poids = None
         self.volume = None
+
+    def calculChemin(self, graph):
+        print ""
 
 class Plan:
     def __init__(self):
@@ -185,6 +208,9 @@ class Plan:
                 
 if __name__ == '__main__':
 
+    #recuperation du plan et des commandes des fichiers XML
+    grapheVille = readXML.lecturePlanXML(XML_PLAN)
+    (commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR, grapheVille)
  
     """
     for n1 in grapheVille.nodes.values():
@@ -195,7 +221,7 @@ if __name__ == '__main__':
     nbDrones = 0
     drones = []
 
-    (longueur, chemin) = plusCourtChemin(grapheVille, 1, 6)
+    (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
     print longueur,
     print " chemin ",
     for n in chemin:
@@ -218,6 +244,7 @@ if __name__ == '__main__':
     print "cycle tsp : ",
     print cycle
 
+    """
     #commandes initiales
     commandes = []
     for i in range(10) :
@@ -228,9 +255,7 @@ if __name__ == '__main__':
         heure = 0
         c = Commande(n, vol, poids, heure)
         commandes.append(c)
-
-    grapheVille = readXML.lecturePlanXML(XML_PLAN)
-    (commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR)
+    """
 
     #kmeans
     nbDrones = 2
@@ -285,8 +310,6 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                  pygame.quit(); sys.exit();
-
-
 
 
 
