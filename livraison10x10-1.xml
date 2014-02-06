@@ -4,7 +4,7 @@
 <Livraisons>
 <Livraison id="0" adresse="13" heure="5-2-2014  13:3:25" poids="0.5" volume="0.5"/>
 <Livraison id="1" adresse="56" heure="5-2-2014  13:4:25" poids="6" volume="10"/>
-<Livraison id="2" adresse="14" heure="5-2-2014  13:4:26" poids="0.4" volume="0.5"/>
+<Livraison id="2" adresse="11" heure="5-2-2014  13:4:26" poids="0.4" volume="0.5"/>
 <Livraison id="3" adresse="68" heure="5-2-2014  13:5:25" poids="0.5" volume="1"/>
 <Livraison id="4" adresse="43" heure="5-2-2014  13:24:25" poids="0.3" volume="1"/>
 <Livraison id="5" adresse="98" heure="5-2-2014  13:25:25" poids="1.7" volume="2"/>

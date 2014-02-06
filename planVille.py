@@ -5,11 +5,13 @@ import graph
 import tsp
 import readXML
 import random
+import copy
 from numpy import vstack
 from scipy.cluster.vq import kmeans,vq
 import pygame, sys
 from pygame.locals import *
 import colorsys
+from pprint import pprint #pour le DEBUG
 
 # INTIALISATION
 
@@ -115,13 +117,18 @@ def myKmeans(drones,commandes) :
 
 def verifierCharges(drones,idx,commandes) :
     bufferCommandes = []
+    print "tournees annulees"
     for d in drones : d.tournee.annulerTournee()
+
     for c in commandes :
         d = drones[idx[commandes.index(c)]]
+        print "j'essaie d'ajouter"
         (dist, _, vol, poids) = d.tournee.tryAddCommande(plan,c)
         if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX :
+            print "j'ajoute pour de vrai"
             d.tournee.addCommande(plan,c)
         else :
+            print "j'enregistre dans le buffer"
             bufferCommandes.append(c)
     return bufferCommandes
 
@@ -131,6 +138,7 @@ def repartition(drones, plan) :
         opt_diffDist = DISTMAX
         for d in drones :
             #print "essai ajout "+str(c.noeud)
+            "essai ajout dans repartition"
             (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
             #print "fin essai"
             if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX :
@@ -143,10 +151,13 @@ def repartition(drones, plan) :
             print "impossible d'ajouter"+str(c.noeud)
             drones.append(Drone())
             myKmeans(drones,plan.commandes)
-            nonAffectees = verifierCharges(drones,idx,plan.commandes)
+            #nonAffectees = verifierCharges(drones,idx,plan.commandes)
+            repartition(drones, plan)
+            break
             #TODO : comment on gère les commandes non affectées à un drône??
             #lancer repartition en recursif
         else :
+            print "veritable ajout dans repartition"
             optimum.tournee.addCommande(plan,c)
         
 
@@ -197,31 +208,53 @@ class Tournee :
         else:
             #Sinon
             #ajout de la station a la tournee
-            self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminReseau, self.distance)
+            self.distance = tsp.insertNodeTSP(plan.mDistances, station, self.cheminReseau, self.distance)
             #creation de la sous-tournee
             (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
             self.distance += d
         self.poids += commande.poids
         self.volume += commande.vol
+        
+        print "resultat de l'ajout veritable"
+        print self.cheminReseau
+        print pprint(self.cheminStations)
+        
 
     def tryAddCommande(self, plan, commande):
         #Recherche si la station est deja dans la tournee
         station = plan.clients[commande.noeud].stationProche 
-        if station in self.cheminReseau :
+
+        #copie de la tournee pour tester l'ajout
+        cpCheminReseau = copy.copy(self.cheminReseau)
+        cpCheminStations = copy.deepcopy(self.cheminStations)
+
+
+        #affichage debug
+        print "ajout de "+str(commande.noeud)+", s="+str(station)+" chemin reseau actuel: ",
+        print cpCheminReseau
+        print pprint(cpCheminStations)
+
+
+        if station in cpCheminReseau :
             #Si la station est dans la tournee, ajout de la commande a la 
             #sous-tournee
-            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminStations[station], self.distance)
+            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, cpCheminStations[station], self.distance)
         else:
             #Sinon
             #ajout de la station a la tournee
-            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminReseau, self.distance)
+            distance = tsp.insertNodeTSP(plan.mDistances, station, cpCheminReseau, self.distance)
             #creation de la sous-tournee
-            (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            (cpCheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
             distance += d
         diffDist = distance - self.distance
         poids = self.poids + commande.poids
         volume = self.volume + commande.vol
-
+        """
+        print "resultat de l'ajout try"
+        print cpCheminReseau
+        print pprint(cpCheminStations)
+        print pprint(self.cheminStations)
+        """
         return (distance, diffDist, poids, volume)
 
     def annulerTournee(self):
