@@ -12,7 +12,7 @@ from pygame.locals import *
 import colorsys
 
 # INTIALISATION
-clients = [13, 56, 14, 68, 43, 98, 67, 73]
+clients = [13, 56, 14, 68, 43, 98, 67, 73, 50, 45, 6, 80]
 
 reseau = list(set(range(100))-set(clients))
 
@@ -225,8 +225,6 @@ if __name__ == '__main__':
 
 
     drones = [Drone()]
-    grapheVille = readXML.lecturePlanXML(XML_PLAN)
-    (commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR)
     stations = list(set(reseau) - set([entrepot]))
 
 
@@ -293,7 +291,3 @@ if __name__ == '__main__':
             if event.type == KEYDOWN and event.key == K_RETURN :
                 (idx,listCoord) = myKmeans(drones,commandes)
                 dessinLivraisons(idx,listCoord)
-
-
-
-
