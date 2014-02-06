@@ -161,9 +161,9 @@ def repartition(drones, plan, commandes) :
         distancesTournee = []
         dronesProches = []
         for d in drones :
-            distancesTournee.append((distanceTournee(plan.mDistances, d, c), d))
+            if len(d.commandes) != 0:
+                distancesTournee.append((distanceTournee(plan.mDistances, d, c), d))
         distancesTournee.sort(key = lambda dt: dt[0])
-        print distancesTournee
         #Tri des drones les plus proches selon le depart (ordre croissant)
         dronesProches = dronesProches[0:N_PROCHES]
         dronesProches.sort(key = lambda dt: dt[1].depart)
@@ -188,7 +188,6 @@ def repartition(drones, plan, commandes) :
             drones.append(Drone(plan))
             (idx, _) = myKmeans(drones,plan.commandes)
             nonAffectees = verifierCharges(drones,idx,plan.commandes, plan.idEntrepot)
-            print list(c.heure for c in nonAffectees)
             b = list(c.noeud for c in nonAffectees)
             print "je repartis dans le buffer"+str(b)
             repartition(drones, plan, nonAffectees)
