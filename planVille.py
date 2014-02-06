@@ -155,24 +155,12 @@ def repartition(drones, plan, commandes) :
             b = list(c.noeud for c in nonAffectees)
             print "je repartis dans le buffer"+str(b)
             repartition(drones, plan, nonAffectees)
-
-            print "resultat final"
-            for d in drones:
-                print "drone : "+str(d)
-                print d.tournee.cheminReseau
-                print pprint(d.tournee.cheminStations)
             break
             #TODO : comment on gère les commandes non affectées à un drône??
             #lancer repartition en recursif
         else :
             print "veritable ajout dans repartition"
             optimum.tournee.addCommande(plan,c)
-        
-    print "resultat final"
-    for d in drones:
-        print "drone : "+str(d)
-        print d.tournee.cheminReseau
-        print pprint(d.tournee.cheminStations)
 
 
 def dessinLivraisons(idx,listCoord):
@@ -407,4 +395,11 @@ if __name__ == '__main__':
                 dessinLivraisons(idx,listCoord)
 
                 repartition(drones, plan, plan.commandes)
+                print "resultat final"
+                for d in drones:
+                    print "drone : "+str(d)
+                    print d.tournee.cheminReseau
+                    print pprint(d.tournee.cheminStations)
+                    d.tournee.annulerTournee()
+
 
