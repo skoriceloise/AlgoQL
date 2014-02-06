@@ -125,8 +125,8 @@ def verifierCharges(drones,idx,commandes) :
             bufferCommandes.append(c)
     return bufferCommandes
 
-def repartition(commandes, drones, plan) :
-    for c in commandes :
+def repartition(drones, plan) :
+    for c in plan.commandes :
         optimum = None
         opt_diffDist = DISTMAX
         for d in drones :
@@ -136,8 +136,8 @@ def repartition(commandes, drones, plan) :
 
         if optimum == None : 
             drones.append(Drone())
-            myKmeans(drones,commandes)
-            nonAffectees = verifierCharges(drones,idx,commandes)
+            myKmeans(drones,plan.commandes)
+            nonAffectees = verifierCharges(drones,idx,plan.commandes)
             #TODO : comment on gère les commandes non affectées à un drône??
         else :
             optimum.tournee.addCommande(plan,c)
@@ -237,7 +237,7 @@ class Plan:
     def __init__(self):
         #Graphe general de la ville
         self.plan = grapheVille
-
+        self.clients = {}
         (self.commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR, grapheVille)
 
         #Graphe du reseau urbain
@@ -246,8 +246,8 @@ class Plan:
         for idReseau in reseau:
             self.reseau.addNodeObject(self.plan.nodes[idReseau])
 
+    def createClients(self) :
         #Creation des clients a livrer
-        self.clients = {}
         noeudsComm = [c.noeud for c in self.commandes]
         for idClient in noeudsComm:
             if idClient not in self.clients.keys():
@@ -260,7 +260,8 @@ class Plan:
         nbNodes = len(self.plan.nodes)
 
         self.mDistances = [[0.0 for x in range(nbNodes)] for y in range(nbNodes)]
-        for i in range(0, nbNodes):
+        print 'station plus proche'
+        for i in range(nbNodes):
             for j in range(i + 1, nbNodes):
                 if i != j:
                     l = (plusCourtChemin(self.plan, i, j))[0]
@@ -272,7 +273,7 @@ class Plan:
                         if self.clients[i].distStation > l:
                             self.clients[i].stationProche = j
                             self.clients[i].distStation = l
-                    elif i in self.stations and j in self.clients:
+                        elif i in self.stations and j in self.clients:
                             self.clients[j].stationProche = i
                             self.clients[j].distStation = l
                 
@@ -287,10 +288,9 @@ if __name__ == '__main__':
             print("%s - %s : %s" % (n1.idNode, n2.idNode, distance(n1,n2)))
     """
     plan = Plan()
-
     drones = [Drone()]
     stations = list(set(reseau) - set([plan.idEntrepot]))
-
+    plan.createClients()
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
     print longueur,
     print " chemin ",
@@ -350,6 +350,6 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit();
             if event.type == KEYDOWN and event.key == K_RETURN :
-                (idx,listCoord) = myKmeans(drones,commandes)
+                (idx,listCoord) = myKmeans(drones,plan.commandes)
                 dessinLivraisons(idx,listCoord)
-                repartition(commandes, drones, plan)
+                repartition(drones, plan)
