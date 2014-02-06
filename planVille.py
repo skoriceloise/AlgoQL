@@ -12,10 +12,13 @@ from pygame.locals import *
 import colorsys
 
 # INTIALISATION
+
+#constantes affichages
 coleur_station = (0,191,255)
 coleur_ecran = (240,255,255)
 coleur_arrete = (173,216,230)
 couleur_entrepot = (255,255,0)
+couleur_client = (0,0,255)
 
 WIDTH = 1024
 HEIGHT = 768
@@ -26,38 +29,24 @@ decalage_h = 0.1 * HEIGHT
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen.fill(coleur_ecran)
 
+#constantes plan
 XML_PLAN = 'plan10x10.xml'
 XML_LIVR = 'livraison10x10-1.xml'
+
+clients = [13, 56, 14, 68, 43, 98, 67, 73, 50, 45, 6, 80]
+
+reseau = list(set(range(100))-set(clients))
+
+stations = []
+
+DISTMAX = 25000.0
+
+VOLMAX = 50.0
+
+POIDSMAX = 50.0
+
+#variables globales
 grapheVille = graph.Graph()
-
-grapheVille.addNode(5.0, 0.0) #noeud 0
-grapheVille.addNode(6.0, 1.0)
-grapheVille.addNode(7.0, 3.0)
-grapheVille.addNode(6.0, 4.0)
-grapheVille.addNode(4.0, 2.0)
-grapheVille.addNode(3.0, 1.0)
-grapheVille.addNode(2.0, 4.0)
-grapheVille.addNode(1.0, 6.0) #noeud 7
-
-grapheVille.addEdge(0,4, 2.5, 30)
-grapheVille.addEdge(0,5, 2.24, 30)
-grapheVille.addEdge(1,2, 2.24, 20)
-grapheVille.addEdge(2,3, 1.42, 20)
-grapheVille.addEdge(3,4, 3.0, 20)
-grapheVille.addEdge(2,4, 4.0, 20)
-grapheVille.addEdge(4,5, 2.0, 30)
-grapheVille.addEdge(5,6, 3.2, 20)
-grapheVille.addEdge(6,7, 2.3, 20)
-
-entrepot = 0
-
-clients = [1,2,7]
-
-reseau = [0,4,5]
-
-stations = [4,5]
-
-
 
 """Calcul de la distance euclidienne (heuristique A*) """
 def distance(node1, node2):
@@ -117,6 +106,59 @@ def plusCourtChemin(graphe, depart, arrivee):
     route.reverse()
     return (longueur, route)
 
+def myKmeans(drones,commandes) :
+    nbDrones = len(drones)
+    listCoord = vstack((grapheVille.nodes[c.noeud].x, grapheVille.nodes[c.noeud].y) for c in commandes)
+    centroids,_ = kmeans(listCoord,nbDrones)
+    idx,_ = vq(listCoord,centroids)
+    return (idx, listCoord)
+
+def verifierCharges(drones,idx,commandes) :
+    bufferCommandes = []
+    for d in drones : d.tournee.annulerTournee()
+    for c in commandes :
+        d = drones[idx[commandes.index(c)]]
+        (dist, _, vol, poids) = d.tournee.tryAddCommande(plan,c)
+        if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX :
+            d.tournee.addCommande(plan,c)
+        else :
+            bufferCommandes.append(c)
+    return bufferCommandes
+
+def repartition(commandes, drones, plan) :
+    for c in commandes :
+        optimum = None
+        opt_diffDist = DISTMAX
+        for d in drones :
+            (dist, diffDist, vol, poids) = d.tournee.tryAddCommande(plan,c)
+            if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX :
+                if diffDist < opt_diffDist : optimum = d
+
+        if optimum == None : 
+            drones.append(Drone())
+            myKmeans(drones,commandes)
+            nonAffectees = verifierCharges(drones,idx,commandes)
+            #TODO : comment on gère les commandes non affectées à un drône??
+        else :
+            optimum.tournee.addCommande(plan,c)
+        
+
+def dessinLivraisons(idx,listCoord):
+    nbDrones = max(idx) + 1
+    #génération de nbDrones couleurs différentes
+    HSV_tuples = [(x*1.0/nbDrones, 0.5, 0.5) for x in range(nbDrones)]
+    RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
+    RGB_tuples = map(lambda x: tuple(map(lambda y: int(y * 255),x)),RGB_tuples)
+
+    #affichage livraisons
+    for i in range(len(listCoord)) :
+        y = idx[i]
+        couleur = RGB_tuples[y]
+        position = (int(decalage_w + listCoord[i,0] * propor_x) , int(decalage_h + listCoord[i,1] * propor_y))
+        pygame.draw.circle(screen, couleur, position , 10, 10)
+
+    pygame.display.update()
+
 class Client:
     def __init__(self, idClient):
         self.idClient = idClient
@@ -134,9 +176,9 @@ class Tournee :
     def __init__(self):
         self.cheminReseau = [] #tournee des stations
         self.cheminStations = {} #sous-tournee des livraisons pour chaque station
-        self.distance = 0
-        self.poids = 0
-        self.volume = 0
+        self.distance = 0.0
+        self.poids = 0.0
+        self.volume = 0.0
 
     def addCommande(self, plan, commande):
         #Recherche si la station est deja dans la tournee
@@ -150,19 +192,43 @@ class Tournee :
             #ajout de la station a la tournee
             self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminReseau, self.distance)
             #creation de la sous-tournee
-            (cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
             self.distance += d
         self.poids += commande.poids
         self.volume += commande.vol
 
+    def tryAddCommande(self, plan, commande):
+        #Recherche si la station est deja dans la tournee
+        station = plan.clients[commande.noeud].stationProche 
+        if station in self.cheminReseau :
+            #Si la station est dans la tournee, ajout de la commande a la 
+            #sous-tournee
+            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, cheminStations[station], self.distance)
+        else:
+            #Sinon
+            #ajout de la station a la tournee
+            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminReseau, self.distance)
+            #creation de la sous-tournee
+            (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            distance += d
+        diffDist = distance - self.distance
+        poids = self.poids + commande.poids
+        volume = self.volume + commande.vol
+
+        return (distance, diffDist, poids, volume)
+
+    def annulerTournee(self):
+        self.cheminReseau = [] 
+        self.cheminStations = {}
+        self.distance  = 0
+        self.poids = 0
+        self.volume = 0
 
 class Drone :
     def __init__(self):
         self.tournee = Tournee()
         self.depart = None
         self.retour = None
-        self.poids = None
-        self.volume = None
 
     def calculChemin(self, graph):
         print ""
@@ -221,8 +287,9 @@ if __name__ == '__main__':
             print("%s - %s : %s" % (n1.idNode, n2.idNode, distance(n1,n2)))
     """
 
-    nbDrones = 0
-    drones = []
+
+    drones = [Drone()]
+    stations = list(set(reseau) - set([entrepot]))
 
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
     print longueur,
@@ -230,6 +297,7 @@ if __name__ == '__main__':
     for n in chemin:
         print n.idNode,
     print
+
 
     plan = Plan()
     """
@@ -246,25 +314,6 @@ if __name__ == '__main__':
     cycle = tsp.greedyTSP(plan.mDistances, [0,2,1,4,5,6,7])
     print "cycle tsp : ",
     print cycle
-
-    """
-    #commandes initiales
-    commandes = []
-    for i in range(10) :
-        y = random.choice(clients)
-        n = grapheVille.nodes[y]
-        poids = random.randrange(50)
-        vol = random.randrange(50)
-        heure = 0
-        c = Commande(n, vol, poids, heure)
-        commandes.append(c)
-    """
-
-    #kmeans
-    nbDrones = 2
-    listCoord = vstack((grapheVille.nodes[c.noeud].x, grapheVille.nodes[c.noeud].y) for c in commandes)
-    centroids,_ = kmeans(listCoord,nbDrones)
-    idx,_ = vq(listCoord,centroids)
 
     #affichages
     max_x = max([n.x for k,n in grapheVille.nodes.iteritems()])
@@ -284,8 +333,10 @@ if __name__ == '__main__':
 
     #dessin des noeuds
     for id, n in grapheVille.nodes.iteritems() :
+        couleur = coleur_station
+        if id in clients : couleur = couleur_client
         position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
-        pygame.draw.circle(screen, coleur_station, position , 10, 5)
+        pygame.draw.circle(screen, couleur, position , 10, 5)
 
     #dessin entrêpot
     x = int(decalage_w + grapheVille.nodes[entrepot].x * propor_x) - 10
@@ -293,27 +344,12 @@ if __name__ == '__main__':
     rect = pygame.Rect(x ,y , 20, 20)
     pygame.draw.rect(screen, couleur_entrepot, rect, 10)
 
-    #génération de nbDrones couleurs différentes
-    HSV_tuples = [(x*1.0/nbDrones, 0.5, 0.5) for x in range(nbDrones)]
-    RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
-    RGB_tuples = map(lambda x: tuple(map(lambda y: int(y * 255),x)),RGB_tuples)
-
-    #répartition livraisons
-    for i in range(len(listCoord)) :
-        y = idx[i]
-        print listCoord[i]
-        couleur = RGB_tuples[y]
-        print couleur
-        position = (int(decalage_w + listCoord[i,0] * propor_x) , int(decalage_h + listCoord[i,1] * propor_y))
-        pygame.draw.circle(screen, couleur, position , 10, 10)
-
-    pygame.display.update()
-
     while 1 :
+        pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                 pygame.quit(); sys.exit();
-
-
-
-
+                pygame.quit(); sys.exit();
+            if event.type == KEYDOWN and event.key == K_RETURN :
+                (idx,listCoord) = myKmeans(drones,commandes)
+                dessinLivraisons(idx,listCoord)
+                repartition(commandes, drones, plan)
