@@ -25,12 +25,23 @@ couleur_client = (0,0,255)
 
 WIDTH = 1024
 HEIGHT = 768
+LIGNE = 10
 
 decalage_w = 0.1 * WIDTH
 decalage_h = 0.1 * HEIGHT
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen.fill(coleur_ecran)
+
+pygame.font.init()
+myfont = pygame.font.SysFont("monospace", 15)
+
+max_x = 0
+max_y = 0
+
+propor_x = 0
+propor_y = 0
+
 
 #constantes plan
 XML_PLAN = 'plan10x10.xml'
@@ -200,6 +211,28 @@ def repartition(drones, plan, commandes) :
             d.updateDepart(True, c)
             d.updateCommandes(c)
 
+def effacer(plan) :
+    #dessin des arrêtes
+    for k, n2 in plan.plan.edges.iteritems() :
+        c = plan.plan.nodes[k]
+        pos1 = (int(decalage_w + c.x * propor_x) , int(decalage_h + c.y * propor_y))
+        for n in n2 :
+            d = plan.plan.nodes[n]
+            pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+            pygame.draw.line(screen, coleur_arrete, pos1, pos2, 3)
+
+    #dessin des noeuds
+    for id, n in plan.plan.nodes.iteritems() :
+        couleur = coleur_station
+        if id in plan.clients : couleur = couleur_client
+        position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
+        pygame.draw.circle(screen, couleur, position , 10, 5)
+
+    #dessin entrêpot
+    x = int(decalage_w + plan.plan.nodes[plan.idEntrepot].x * propor_x) - 10
+    y = int(decalage_h + plan.plan.nodes[plan.idEntrepot].y * propor_y) - 10
+    rect = pygame.Rect(x ,y , 20, 20)
+    pygame.draw.rect(screen, couleur_entrepot, rect, 10)
 
 def dessinLivraisons(drones, plan):
     nbDrones = len(drones)
@@ -211,11 +244,43 @@ def dessinLivraisons(drones, plan):
     #affichage livraisons
     y = 0
     for d in drones :
+        couleur = RGB_tuples[y]
+
+        """
+        text = 'Drone ' + str(y) + ' : '
+        label = myfont.render(text, 1, couleur)
+        screen.blit(label, (400 * y, LIGNE))
+
+        text = 'depart = ' + str(d.depart)
+        label = myfont.render(text, 1, couleur)
+        screen.blit(label, (400 * y, LIGNE * 2))
+
+        text = 'commandes = ' + " - ".join(map(str,[j.noeud for j in d.commandes]))
+        label = myfont.render(text, 1, couleur)
+        screen.blit(label, (400 * y , LIGNE  * 3))
+        """
+        start = plan.idEntrepot
         for idN,_ in d.tournee.cheminStations.iteritems() :
-            couleur = RGB_tuples[y]
             n = plan.plan.nodes[idN]
             position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
             pygame.draw.circle(screen, couleur, position , 10, 10)
+
+            (_, visited) = plusCourtChemin(plan.plan, start, idN)
+            for v in visited :
+                if visited.index(v) >= len(visited) - 1 : break
+                pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
+                d = visited[visited.index(v) + 1]
+                pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+                pygame.draw.line(screen, couleur, pos1, pos2, 3)
+            start = visited[-1].idNode
+        #retour à l'entrêpot
+        (_, visited) = plusCourtChemin(plan.plan, start, plan.idEntrepot)
+        for v in visited :
+            if visited.index(v) >= len(visited) - 1 : break
+            pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
+            d = visited[visited.index(v) + 1]
+            pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+            pygame.draw.line(screen, couleur, pos1, pos2, 3)
         y += 1
 
     pygame.display.update()
@@ -413,43 +478,20 @@ if __name__ == '__main__':
     print "cycle tsp : ",
     print cycle
 
-    #affichages
-    max_x = max([n.x for k,n in grapheVille.nodes.iteritems()])
-    max_y = max([n.y for k,n in grapheVille.nodes.iteritems()])
+    max_x = max([n.x for k,n in plan.plan.nodes.iteritems()])
+    max_y = max([n.y for k,n in plan.plan.nodes.iteritems()])
 
-    propor_x = (WIDTH - 2 * decalage_w) / max_x
-    propor_y = (HEIGHT - 2 * decalage_h) / max_y
+    propor_x = (WIDTH - 3 * decalage_w) / max_x
+    propor_y = (HEIGHT - 3 * decalage_h) / max_y
 
-    #dessin des arrêtes
-    for k, n2 in grapheVille.edges.iteritems() :
-        c = grapheVille.nodes[k]
-        pos1 = (int(decalage_w + c.x * propor_x) , int(decalage_h + c.y * propor_y))
-        for n in n2 :
-            d = grapheVille.nodes[n]
-            pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
-            pygame.draw.line(screen, coleur_arrete, pos1, pos2, 3)
-
-    #dessin des noeuds
-    for id, n in grapheVille.nodes.iteritems() :
-        couleur = coleur_station
-        if id in plan.clients : couleur = couleur_client
-        position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
-        pygame.draw.circle(screen, couleur, position , 10, 5)
-
-    #dessin entrêpot
-    x = int(decalage_w + grapheVille.nodes[plan.idEntrepot].x * propor_x) - 10
-    y = int(decalage_h + grapheVille.nodes[plan.idEntrepot].y * propor_y) - 10
-    rect = pygame.Rect(x ,y , 20, 20)
-    pygame.draw.rect(screen, couleur_entrepot, rect, 10)
-
+    effacer(plan)
     while 1 :
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit();
             if event.type == KEYDOWN and event.key == K_RETURN :
-                #(idx,listCoord) = myKmeans(drones,plan.commandes)
-
+                effacer(plan)
                 repartition(drones, plan, plan.commandes)
                 dessinLivraisons(drones,plan)
                 print "resultat final"
