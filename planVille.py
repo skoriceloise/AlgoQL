@@ -62,7 +62,8 @@ POIDSMAX = 50.0
 TIMEOUT_MIN = 0.5 #valeur min du timeout (en heures)
 TIMEOUT_MAX = 2   #valeur max du timeout (en heures)
 
-N_PROCHES = 3
+CLUSTERS = 4
+DRONES = 150
 
 #variables globales
 grapheVille = graph.Graph()
@@ -136,23 +137,31 @@ def distanceTournee(mDistances, drone, commande):
     return minDist
 
 def myKmeans(drones,commandes) :
-    nbDrones = len(drones)
+    nbClusters = CLUSTERS
     listCoord = vstack((grapheVille.nodes[c.noeud].x, grapheVille.nodes[c.noeud].y) for c in commandes)
-    centroids,_ = kmeans(listCoord,nbDrones)
+    centroids,_ = kmeans(listCoord,nbClusters)
     idx,_ = vq(listCoord,centroids)
     return (idx, listCoord)
 
 def verifierCharges(drones,idx,commandes, idEntrepot) :
     bufferCommandes = []
     print "tournees annulees"
-    for d in drones : d.tournee.annulerTournee(idEntrepot)
+    for d in drones : 
+        d.tournee.annulerTournee(idEntrepot)
+        d.depart = None
 
     for c in commandes :
+        print idx[commandes.index(c)]
         d = drones[idx[commandes.index(c)]]
         print "j'essaie d'ajouter"
         (dist, _, vol, poids) = d.tournee.tryAddCommande(plan,c)
         departDrone = d.updateDepart(False, c)
-        if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX and c.heure < departDrone :
+        print str(dist)
+        print str(poids)
+        print str(vol)
+        print departDrone
+        if departDrone != None : print c.heure < departDrone
+        if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX and (departDrone == None or c.heure < departDrone ):
             print "j'ajoute pour de vrai"
             d.tournee.addCommande(plan,c)
             d.updateDepart(True, c)
@@ -170,9 +179,9 @@ def repartition(drones, plan, commandes) :
         #Calcul de la distance de la commande aux tournees de tous les drones
         #pour recuperer les N plus proches
         distancesTournee = []
-        dronesProches = []
         for d in drones :
-            if len(d.commandes) != 0:
+            print "depart"+str(d.depart)
+            if len(d.commandes) != 0 and d.depart != None:
                 distancesTournee.append((distanceTournee(plan.mDistances, d, c), d))
         if len(distancesTournee) != 0:
             distancesTournee.sort(key = lambda dt: dt[0])
@@ -190,7 +199,7 @@ def repartition(drones, plan, commandes) :
                 departDrone = d.updateDepart(False, c)
 
                 #print "fin essai"
-                if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX and c.heure < departDrone :
+                if dist < DISTMAX and vol < VOLMAX and poids < POIDSMAX and (departDrone == None or c.heure < departDrone) :
                     if  diffDist < opt_diffDist : 
                         optimum = d
                         opt_diffDist = diffDist
@@ -407,6 +416,7 @@ class Drone :
         if modifAttribut : self.depart = hDepart
         return hDepart
 
+
 class Plan:
     def __init__(self):
         #Graphe general de la ville
@@ -514,5 +524,6 @@ if __name__ == '__main__':
                     print d.tournee.cheminReseau
                     print pprint(d.tournee.cheminStations)
                     d.tournee.annulerTournee(plan.idEntrepot)
+                    d.depart = None
 
 

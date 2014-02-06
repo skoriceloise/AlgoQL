@@ -50,6 +50,8 @@ POIDSMAX = 50.0
 
 NB_DRONES = 150
 
+CLUSTERS = 4
+
 #variables globales
 grapheVille = graph.Graph()
 
@@ -122,33 +124,33 @@ def distanceTournee(mDistances, drone, commande):
     return minDist
 
 def myKmeans(drones,commandes) :
-    nbDrones = len(drones)
+    nbClusters = CLUSTERS
     listCoord = vstack((grapheVille.nodes[c.noeud].x, grapheVille.nodes[c.noeud].y) for c in commandes)
-    centroids,_ = kmeans(listCoord,nbDrones)
+    centroids,_ = kmeans(listCoord,nbClusters)
     idx,_ = vq(listCoord,centroids)
     return (idx, listCoord)
 
 def repartKMeans(drones,commandes, plan) :
     bufferCommandes = []
+    nonAffectees = []
     (idx, _) = myKmeans(drones,plan.commandes)
 
     for c in commandes :
         d = drones[idx[commandes.index(c)]]
-        print "j'essaie d'ajouter"
         (dist, _, vol, poids) = d.tournee.tryAddCommande(plan,c)
         if dist <= DISTMAX and poids <= POIDSMAX and vol <= VOLMAX :
-            print "j'ajoute pour de vrai"
             d.tournee.addCommande(plan,c)
             d.updateCommandes(c)
         else :
-            print "j'enregistre dans le buffer"
+            print "j'enregistre dans le buffer "+str(c.noeud)
             bufferCommandes.append(c)
 
     #repartition des commandes non affectees aux drones (pour les charger au max)
-    repartitionBuffer(drones, plan, bufferCommandes)
-    return bufferCommandes
+    print "repartitionBuffer"
+    repartitionBuffer(drones, plan, bufferCommandes, nonAffectees)
+    return nonAffectees
 
-def repartitionBuffer(drones, plan, commandes) :
+def repartitionBuffer(drones, plan, commandes, nonAffectees) :
     for c in commandes :
         optimum = None
         opt_diffDist = DISTMAX
@@ -162,9 +164,14 @@ def repartitionBuffer(drones, plan, commandes) :
 
         if optimum == None : 
             print "impossible d'ajouter"+str(c.noeud)
+            if len(drones) < NB_DRONES:
+                drones.append(Drone(plan))
+                repartitionBuffer(drones, plan, [c], nonAffectees)
+            else :
+                print "plus assez de drones"
+                nonAffectees.append(c)
 
         else :
-            print "veritable ajout dans repartition"
             optimum.tournee.addCommande(plan,c)
             d.updateCommandes(c)
 
@@ -225,11 +232,7 @@ class Tournee :
             self.distance += d
         self.poids += commande.poids
         self.volume += commande.vol
-        
-        print "resultat de l'ajout veritable"
-        print self.cheminReseau
-        print pprint(self.cheminStations)
-        
+                
 
     def tryAddCommande(self, plan, commande):
         #Recherche si la station est deja dans la tournee
@@ -238,12 +241,6 @@ class Tournee :
         #copie de la tournee pour tester l'ajout
         cpCheminReseau = copy.copy(self.cheminReseau)
         cpCheminStations = copy.deepcopy(self.cheminStations)
-
-
-        #affichage debug
-        print "ajout de "+str(commande.noeud)+", s="+str(station)+" chemin reseau actuel: ",
-        print cpCheminReseau
-        print pprint(cpCheminStations)
 
 
         if station in cpCheminReseau :
@@ -344,7 +341,7 @@ if __name__ == '__main__':
     reseau = list(set(range(100))-set(plan.clients))
     plan.addReseauUrbain(reseau)
 
-    drones = [Drone(plan) for x in range(0,150)]
+    drones = [Drone(plan) for x in range(0,CLUSTERS)]
     print len(drones)
     stations = list(set(reseau) - set([plan.idEntrepot]) - set((range(10,30))))
     plan.createClients()

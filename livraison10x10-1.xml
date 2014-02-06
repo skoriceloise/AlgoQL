@@ -17,6 +17,6 @@
 <Livraison id="12" adresse="65" heure="5-2-2014  18:54:25" poids="3.3" volume="2"/>
 <Livraison id="13" adresse="32" heure="5-2-2014  18:59:25" poids="2.7" volume="2"/>
 <Livraison id="14" adresse="90" heure="5-2-2014  19:45:25" poids="8.125" volume="0.5"/>
-<Livraison id="15" adresse="95" heure="5-2-2014  20:0:25" poids="0.5" volume="2"/>
+<Livraison id="15" adresse="95" heure="5-2-2014  20:0:25" poids="0.5" volume="49"/>
 </Livraisons>
 </JourneeType>
