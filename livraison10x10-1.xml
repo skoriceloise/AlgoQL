@@ -10,5 +10,13 @@
 <Livraison id="5" adresse="98" heure="5-2-2014  13:25:25" poids="1.7" volume="2"/>
 <Livraison id="6" adresse="67" heure="5-2-2014  13:26:25" poids="0.125" volume="0.5"/>
 <Livraison id="7" adresse="13" heure="5-2-2014  14:3:25" poids="0.5" volume="0.5"/>
+<Livraison id="8" adresse="13" heure="5-2-2014  15:2:56" poids="0.5" volume="0.5"/>
+<Livraison id="9" adresse="56" heure="5-2-2014  15:30:4" poids="6" volume="10"/>
+<Livraison id="10" adresse="71" heure="5-2-2014  16:45:26" poids="3" volume="10"/>
+<Livraison id="11" adresse="89" heure="5-2-2014  18:50:25" poids="2.5" volume="10"/>
+<Livraison id="12" adresse="65" heure="5-2-2014  18:54:25" poids="3.3" volume="2"/>
+<Livraison id="13" adresse="32" heure="5-2-2014  18:59:25" poids="2.7" volume="2"/>
+<Livraison id="14" adresse="90" heure="5-2-2014  19:45:25" poids="8.125" volume="0.5"/>
+<Livraison id="15" adresse="95" heure="5-2-2014  20:0:25" poids="0.5" volume="2"/>
 </Livraisons>
 </JourneeType>
