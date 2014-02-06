@@ -150,7 +150,7 @@ def repartition(drones, plan, commandes) :
         if optimum == None : 
             print "impossible d'ajouter"+str(c.noeud)
             drones.append(Drone())
-            myKmeans(drones,plan.commandes)
+            (idx, _) = myKmeans(drones,plan.commandes)
             nonAffectees = verifierCharges(drones,idx,plan.commandes)
             b = list(c.noeud for c in nonAffectees)
             print "je repartis dans le buffer"+str(b)
@@ -163,19 +163,22 @@ def repartition(drones, plan, commandes) :
             optimum.tournee.addCommande(plan,c)
 
 
-def dessinLivraisons(idx,listCoord):
-    nbDrones = max(idx) + 1
+def dessinLivraisons(drones, plan):
+    nbDrones = len(drones)
     #génération de nbDrones couleurs différentes
     HSV_tuples = [(x*1.0/nbDrones, 0.5, 0.5) for x in range(nbDrones)]
     RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
     RGB_tuples = map(lambda x: tuple(map(lambda y: int(y * 255),x)),RGB_tuples)
 
     #affichage livraisons
-    for i in range(len(listCoord)) :
-        y = idx[i]
-        couleur = RGB_tuples[y]
-        position = (int(decalage_w + listCoord[i,0] * propor_x) , int(decalage_h + listCoord[i,1] * propor_y))
-        pygame.draw.circle(screen, couleur, position , 10, 10)
+    y = 0
+    for d in drones :
+        for idN,_ in d.tournee.cheminStations.iteritems() :
+            couleur = RGB_tuples[y]
+            n = plan.plan.nodes[idN]
+            position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
+            pygame.draw.circle(screen, couleur, position , 10, 10)
+        y += 1
 
     pygame.display.update()
 
@@ -391,10 +394,10 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit();
             if event.type == KEYDOWN and event.key == K_RETURN :
-                (idx,listCoord) = myKmeans(drones,plan.commandes)
-                dessinLivraisons(idx,listCoord)
+                #(idx,listCoord) = myKmeans(drones,plan.commandes)
 
                 repartition(drones, plan, plan.commandes)
+                dessinLivraisons(drones,plan)
                 print "resultat final"
                 for d in drones:
                     print "drone : "+str(d)
