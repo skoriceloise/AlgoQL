@@ -58,7 +58,7 @@ VOLMAX = 50.0
 
 POIDSMAX = 50.0
 
-NB_DRONES = 150
+NB_DRONES = 5
 
 CLUSTERS = 4
 
@@ -367,13 +367,13 @@ class Plan:
         self.mDistances = [[0.0 for x in range(nbNodes)] for y in range(nbNodes)]
         print 'station plus proche'
         for i in range(nbNodes):
-            for j in range(i + 1, nbNodes):
-                if i != j:
+            for j in range(i, nbNodes):
                     l = (plusCourtChemin(self.plan, i, j))[0]
                     self.mDistances[i][j] = l
                     self.mDistances[j][i] = l
                     
                     #Enregistrement de la station la plus proche pour un client
+                    #print str(i) +" "+str(j) + " long " +str(l)
                     if i in self.clients.keys() and j in self.stations: 
                         if self.clients[i].distStation > l:
                             self.clients[i].stationProche = j
@@ -440,7 +440,7 @@ if __name__ == '__main__':
                 pygame.quit(); sys.exit();
             if event.type == KEYDOWN and event.key == K_RETURN :
                 effacer(plan)
-                repartKMeans(drones, plan.commandes, plan)
+                cRestantes = repartKMeans(drones, plan.commandes, plan)
                 dessinLivraisons(drones,plan)
                 print "resultat final"
                 for d in drones:
@@ -451,6 +451,7 @@ if __name__ == '__main__':
                         print " distance : " + str(d.tournee.distance),
                         print d.tournee.cheminReseau
                         print pprint(d.tournee.cheminStations)
+                print "Commandes restantes "+str(list(c.noeud for c in cRestantes))
 
 
 
