@@ -4,27 +4,55 @@ from xml.dom import minidom
 from datetime import datetime
 
 def lecturePlanXML(ficPlan):
-    newGraph = graph.Graph()
+    newGraphVille = graph.Graph()
+    newGraphReseau = graph.Graph()
 
     xmldoc = minidom.parse(ficPlan)
     nodesXML = xmldoc.getElementsByTagName('Noeud') 
     #Ajout de tous les noeuds au graphe
     for node in nodesXML:
-        newGraph.addNode(float(node.attributes['x'].value) * 8.0, float(node.attributes['y'].value) * 8.0)
+            newGraphVille.addNode(float(node.attributes['x'].value) * 8.0, float(node.attributes['y'].value) * 8.0)
+        
+    #refaire proprement
+    newGraphReseau.addNodeObject(newGraphVille.nodes[40])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[30])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[50])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[20])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[21])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[11])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[31])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[41])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[51])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[60])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[61])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[62])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[70])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[71])
+    newGraphReseau.addNodeObject(newGraphVille.nodes[72])
+
 
     #Ajout des aretes au graphe
     for node in nodesXML:
         for edge in node.getElementsByTagName('TronconSortant'):
             idNode1 = int(node.attributes['id'].value)
             idNode2 = int(edge.attributes['destination'].value)
-            if idNode2 not in newGraph.edges.keys() or idNode1 not in newGraph.edges[idNode2]:
+            if idNode2 not in newGraphVille.edges.keys() or idNode1 not in newGraphVille.edges[idNode2]:
                     longueur = edge.attributes['longueur'].value
                     longueur = longueur.replace(',', '.')
                     vitesse = edge.attributes['vitesse'].value
-                    vitesse = vitesse.replace(',','.')
-                    newGraph.addEdge(idNode1, idNode2, float(longueur), float(vitesse))
+                    vitesse = vitesse.replace(',','.')                  
+                    newGraphVille.addEdge(idNode1, idNode2, float(longueur), float(vitesse))
 
-    return newGraph
+            if(edge.attributes['reseau'].value == '1'):
+                if idNode2 not in newGraphReseau.edges.keys() or idNode1 not in newGraphReseau.edges[idNode2]:
+                        longueur = edge.attributes['longueur'].value
+                        longueur = longueur.replace(',', '.')
+                        vitesse = edge.attributes['vitesse'].value
+                        vitesse = vitesse.replace(',','.')       
+                        print "edge "+str(idNode1)+"-"+str(idNode2)           
+                        newGraphReseau.addEdge(idNode1, idNode2, float(longueur), float(vitesse))
+
+    return (newGraphVille, newGraphReseau)
 
 def lectureCommandesXML(ficLivr, graph):
     commandes = []

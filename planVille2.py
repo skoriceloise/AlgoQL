@@ -113,15 +113,18 @@ def AStar(graph, start, goal):
 def plusCourtChemin(graphe, depart, arrivee):
     nodeDepart = graphe.nodes[depart]
     nodeArrivee = graphe.nodes[arrivee]
-    (longueur, chemin) = AStar(graphe, nodeDepart, nodeArrivee)
+    print depart,
+    print arrivee
+    (longueurA, cheminA) = AStar(graphe, nodeDepart, nodeArrivee)
+    print "au revoir"
     route = [nodeArrivee]
 
     while nodeArrivee != nodeDepart:
-        route.append(chemin[nodeArrivee])
-        nodeArrivee = chemin[nodeArrivee]
+        route.append(cheminA[nodeArrivee])
+        nodeArrivee = cheminA[nodeArrivee]
 
     route.reverse()
-    return (longueur, route)
+    return (longueurA, route)
 
 #Distance d'une commande a une tournee (definie par le min)
 def distanceTournee(mDistances, drone, commande):
@@ -286,13 +289,13 @@ class Tournee :
         if station in self.cheminReseau :
             #Si la station est dans la tournee, ajout de la commande a la 
             #sous-tournee
-            self.distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, self.cheminStations[station], self.distance)
+            self.distance = tsp.insertNodeTSP(plan.mDistancesVille, commande.noeud, self.cheminStations[station], self.distance)
         else:
             #Sinon
             #ajout de la station a la tournee
-            self.distance = tsp.insertNodeTSP(plan.mDistances, station, self.cheminReseau, self.distance)
+            self.distance = tsp.insertNodeTSP(plan.mDistancesReseau, station, self.cheminReseau, self.distance)
             #creation de la sous-tournee
-            (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            (self.cheminStations[station], d) = tsp.greedyTSP(plan.mDistancesVille, [station, commande.noeud])
             self.distance += d
         self.poids += commande.poids
         self.volume += commande.vol
@@ -310,13 +313,13 @@ class Tournee :
         if station in cpCheminReseau :
             #Si la station est dans la tournee, ajout de la commande a la 
             #sous-tournee
-            distance = tsp.insertNodeTSP(plan.mDistances, commande.noeud, cpCheminStations[station], self.distance)
+            distance = tsp.insertNodeTSP(plan.mDistancesVille, commande.noeud, cpCheminStations[station], self.distance)
         else:
             #Sinon
             #ajout de la station a la tournee
-            distance = tsp.insertNodeTSP(plan.mDistances, station, cpCheminReseau, self.distance)
+            distance = tsp.insertNodeTSP(plan.mDistancesReseau, station, cpCheminReseau, self.distance)
             #creation de la sous-tournee
-            (cpCheminStations[station], d) = tsp.greedyTSP(plan.mDistances, [station, commande.noeud])
+            (cpCheminStations[station], d) = tsp.greedyTSP(plan.mDistancesVille, [station, commande.noeud])
             distance += d
         diffDist = distance - self.distance
         poids = self.poids + commande.poids
@@ -348,9 +351,20 @@ class Plan:
     def __init__(self):
         #Graphe general de la ville
         self.plan = grapheVille
+        self.reseau = grapheReseau
         self.clients = {}
         (self.commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR, grapheVille)
         self.idEntrepot = entrepot
+
+        print self.reseau.edges
+
+        nbNodesRes = len(self.reseau.nodes)
+        print self.reseau.nodes
+        self.mDistancesReseau = [[float("inf") for x in range(100)] for y in range(100)]
+        for n1 in self.reseau.nodes:
+            for n2 in self.reseau.nodes:
+                    l = (plusCourtChemin(self.reseau, n1, n2))[0]
+                    self.mDistancesReseau[n1][n2] = l
 
     def createClients(self) :
         #Creation des clients a livrer
@@ -364,16 +378,15 @@ class Plan:
         #Calcul des distances entre les noeuds du graphe de la ville
         nbNodes = len(self.plan.nodes)
 
-        self.mDistances = [[0.0 for x in range(nbNodes)] for y in range(nbNodes)]
+        self.mDistancesVille = [[0.0 for x in range(nbNodes)] for y in range(nbNodes)]
         print 'station plus proche'
         for i in range(nbNodes):
             for j in range(i, nbNodes):
                     l = (plusCourtChemin(self.plan, i, j))[0]
-                    self.mDistances[i][j] = l
-                    self.mDistances[j][i] = l
+                    self.mDistancesVille[i][j] = l
+                    self.mDistancesVille[j][i] = l
                     
                     #Enregistrement de la station la plus proche pour un client
-                    #print str(i) +" "+str(j) + " long " +str(l)
                     if i in self.clients.keys() and j in self.stations: 
                         if self.clients[i].distStation > l:
                             self.clients[i].stationProche = j
@@ -393,7 +406,7 @@ class Plan:
 if __name__ == '__main__':
 
     #recuperation du plan et des commandes des fichiers XML
-    grapheVille = readXML.lecturePlanXML(XML_PLAN)
+    (grapheVille, grapheReseau) = readXML.lecturePlanXML(XML_PLAN)
 
     """
     for n1 in grapheVille.nodes.values():
@@ -407,7 +420,7 @@ if __name__ == '__main__':
 
     drones = [Drone(plan) for x in range(0,CLUSTERS)]
     print len(drones)
-    stations = list(set(reseau) - set([plan.idEntrepot]) - set((range(10,30))))
+    stations = (11,41,70,72)
     plan.createClients()
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
 
@@ -422,7 +435,7 @@ if __name__ == '__main__':
         print str(plan.clients[client].idClient) + " : " + str(plan.clients[client].stationProche)
 
 
-    cycle = tsp.greedyTSP(plan.mDistances, [0,2,1,4,5,6,7])
+    cycle = tsp.greedyTSP(plan.mDistancesVille, [0,2,1,4,5,6,7])
     print "cycle tsp : ",
     print cycle
 
