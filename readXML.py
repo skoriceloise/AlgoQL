@@ -49,7 +49,6 @@ def lecturePlanXML(ficPlan):
                         longueur = longueur.replace(',', '.')
                         vitesse = edge.attributes['vitesse'].value
                         vitesse = vitesse.replace(',','.')       
-                        print "edge "+str(idNode1)+"-"+str(idNode2)           
                         newGraphReseau.addEdge(idNode1, idNode2, float(longueur), float(vitesse))
 
     return (newGraphVille, newGraphReseau)

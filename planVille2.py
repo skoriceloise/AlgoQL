@@ -153,7 +153,7 @@ def repartKMeans(drones,commandes, plan) :
             d.tournee.addCommande(plan,c)
             d.updateCommandes(c)
         else :
-            print "j'enregistre dans le buffer "+str(c.noeud)
+            print "enregistrement dans le buffer "+str(c.noeud)
             bufferCommandes.append(c)
 
     #repartition des commandes non affectees aux drones (pour les charger au max)
@@ -258,7 +258,6 @@ def dessinLivraisons(drones, plan):
             pygame.draw.line(screen, couleur, pos1, pos2, 3)
 
         #affichage des sous-tournees
-        print pprint(d.tournee.cheminStations)
         for (st, trajet) in d.tournee.cheminStations.iteritems() :
             start = st
             for idN in trajet:
@@ -406,10 +405,8 @@ class Plan:
         (self.commandes, entrepot) = readXML.lectureCommandesXML(XML_LIVR, grapheVille)
         self.idEntrepot = entrepot
 
-        print self.reseau.edges
 
         nbNodesRes = len(self.reseau.nodes)
-        print self.reseau.nodes
         self.mDistancesReseau = [[float("inf") for x in range(100)] for y in range(100)]
         for n1 in self.reseau.nodes:
             for n2 in self.reseau.nodes:
@@ -469,7 +466,7 @@ if __name__ == '__main__':
     #plan.addReseauUrbain(reseau)
 
     drones = [Drone(plan) for x in range(0,CLUSTERS)]
-    print len(drones)
+ 
     stations = (11,41,70,72)
     plan.createClients()
     (longueur, chemin) = plusCourtChemin(grapheVille, 0, 30)
