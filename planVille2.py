@@ -113,18 +113,16 @@ def AStar(graph, start, goal):
 def plusCourtChemin(graphe, depart, arrivee):
     nodeDepart = graphe.nodes[depart]
     nodeArrivee = graphe.nodes[arrivee]
-    print depart,
-    print arrivee
-    (longueurA, cheminA) = AStar(graphe, nodeDepart, nodeArrivee)
-    print "au revoir"
+    (longueur, chemin) = AStar(graphe, nodeDepart, nodeArrivee)
+
     route = [nodeArrivee]
 
     while nodeArrivee != nodeDepart:
-        route.append(cheminA[nodeArrivee])
-        nodeArrivee = cheminA[nodeArrivee]
+        route.append(chemin[nodeArrivee])
+        nodeArrivee = chemin[nodeArrivee]
 
     route.reverse()
-    return (longueurA, route)
+    return (longueur, route)
 
 #Distance d'une commande a une tournee (definie par le min)
 def distanceTournee(mDistances, drone, commande):
@@ -222,42 +220,94 @@ def dessinLivraisons(drones, plan):
     y = 0
     for d in drones :
         couleur = RGB_tuples[y]
-
-        """
+    
+        """  
         text = 'Drone ' + str(y) + ' : '
         label = myfont.render(text, 1, couleur)
         screen.blit(label, (400 * y, LIGNE))
-
-        text = 'depart = ' + str(d.depart)
-        label = myfont.render(text, 1, couleur)
-        screen.blit(label, (400 * y, LIGNE * 2))
 
         text = 'commandes = ' + " - ".join(map(str,[j.noeud for j in d.commandes]))
         label = myfont.render(text, 1, couleur)
         screen.blit(label, (400 * y , LIGNE  * 3))
         """
+        
         start = plan.idEntrepot
-        for idN,_ in d.tournee.cheminStations.iteritems() :
-            n = plan.plan.nodes[idN]
+
+        #affichage de la tournee sur le reseau
+        for idN in d.tournee.cheminReseau:
+            n = plan.reseau.nodes[idN]
             position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
             pygame.draw.circle(screen, couleur, position , 10, 10)
 
-            (_, visited) = plusCourtChemin(plan.plan, start, idN)
+            (_, visited) = plusCourtChemin(plan.reseau, start, idN)
+            for v in visited :
+                if visited.index(v) >= len(visited) - 1 : break
+                pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
+                node = visited[visited.index(v) + 1]
+                pos2 = (int(decalage_w + node.x * propor_x) , int(decalage_h + node.y * propor_y))
+                pygame.draw.line(screen, couleur, pos1, pos2, 3)
+            start = visited[-1].idNode
+
+        #retour à l'entrêpot
+        (_, visited) = plusCourtChemin(plan.reseau, start, plan.idEntrepot)
+        for v in visited :
+            if visited.index(v) >= len(visited) - 1 : break
+            pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
+            node = visited[visited.index(v) + 1]
+            pos2 = (int(decalage_w + node.x * propor_x) , int(decalage_h + node.y * propor_y))
+            pygame.draw.line(screen, couleur, pos1, pos2, 3)
+
+        #affichage des sous-tournees
+        print pprint(d.tournee.cheminStations)
+        for (st, trajet) in d.tournee.cheminStations.iteritems() :
+            start = st
+            for idN in trajet:
+                n = plan.plan.nodes[idN]
+                position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
+                pygame.draw.circle(screen, couleur, position , 10, 10)
+
+                (_, visited) = plusCourtChemin(plan.plan, start, idN)
+                for v in visited :
+                    if visited.index(v) >= len(visited) - 1 : break
+                    pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
+                    d = visited[visited.index(v) + 1]
+                    pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+                    pygame.draw.line(screen, couleur, pos1, pos2, 3)
+                start = visited[-1].idNode
+
+            #retour à la station
+            (_, visited) = plusCourtChemin(plan.plan, start, plan.idEntrepot)
             for v in visited :
                 if visited.index(v) >= len(visited) - 1 : break
                 pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
                 d = visited[visited.index(v) + 1]
                 pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
                 pygame.draw.line(screen, couleur, pos1, pos2, 3)
-            start = visited[-1].idNode
-        #retour à l'entrêpot
-        (_, visited) = plusCourtChemin(plan.plan, start, plan.idEntrepot)
-        for v in visited :
-            if visited.index(v) >= len(visited) - 1 : break
-            pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
-            d = visited[visited.index(v) + 1]
-            pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
-            pygame.draw.line(screen, couleur, pos1, pos2, 3)
+
+
+            """
+            for idN,_ in d.tournee.cheminStations.iteritems() :
+                n = plan.plan.nodes[idN]
+                position = (int(decalage_w + n.x * propor_x) , int(decalage_h + n.y * propor_y))
+                pygame.draw.circle(screen, couleur, position , 10, 10)
+
+                (_, visited) = plusCourtChemin(plan.reseau, start, idN)
+                for v in visited :
+                    if visited.index(v) >= len(visited) - 1 : break
+                    pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
+                    d = visited[visited.index(v) + 1]
+                    pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+                    pygame.draw.line(screen, couleur, pos1, pos2, 3)
+                start = visited[-1].idNode
+            #retour à l'entrêpot
+            (_, visited) = plusCourtChemin(plan.plan, start, plan.idEntrepot)
+            for v in visited :
+                if visited.index(v) >= len(visited) - 1 : break
+                pos1 = (int(decalage_w + v.x * propor_x) , int(decalage_h + v.y * propor_y))
+                d = visited[visited.index(v) + 1]
+                pos2 = (int(decalage_w + d.x * propor_x) , int(decalage_h + d.y * propor_y))
+                pygame.draw.line(screen, couleur, pos1, pos2, 3)
+                """
         y += 1
 
     pygame.display.update()
@@ -278,7 +328,7 @@ class Commande:
 class Tournee :
     def __init__(self, idEntrepot):
         self.cheminReseau = [idEntrepot] #tournee des stations
-        self.cheminStations = {plan.idEntrepot : plan.idEntrepot} #sous-tournee des livraisons pour chaque station
+        self.cheminStations = {plan.idEntrepot : [plan.idEntrepot]} #sous-tournee des livraisons pour chaque station
         self.distance = 0.0
         self.poids = 0.0
         self.volume = 0.0
@@ -415,8 +465,8 @@ if __name__ == '__main__':
     """
     plan = Plan()
 
-    reseau = list(set(range(100))-set(plan.clients))
-    plan.addReseauUrbain(reseau)
+    #reseau = list(set(range(100))-set(plan.clients))
+    #plan.addReseauUrbain(reseau)
 
     drones = [Drone(plan) for x in range(0,CLUSTERS)]
     print len(drones)
